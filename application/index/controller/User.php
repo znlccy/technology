@@ -3,12 +3,12 @@
  * Created by PhpStorm.
  * User: Administrator
  * Date: 2018/9/6
- * Time: 10:56
+ * Time: 11:33
  * Comment: 用户控制器
  */
 
-namespace app\index\model;
+namespace app\index\controller;
 
-class User extends BasicModel {
+class User extends BasicController {
 
 }
