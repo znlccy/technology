@@ -11,4 +11,10 @@ namespace app\index\model;
 
 class Carousel extends BasicModel {
 
+    /* 读写时间 */
+    protected $autoWriteTimestamp = 'datetime';
+
+    /* 对应的表 */
+    protected $table = 'tb_carousel';
+
 }

@@ -11,4 +11,8 @@ namespace app\admin\validate;
 
 class Product extends BasisValidate {
 
+    /* 验证规则 */
+    protected $rule = [
+
+    ];
 }

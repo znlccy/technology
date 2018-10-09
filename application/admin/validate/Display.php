@@ -2,14 +2,14 @@
 /**
  * Created by PhpStorm.
  * User: Administrator
- * Date: 2018/9/6
- * Time: 10:55
- * Comment: 权限验证器
+ * Date: 2018/10/9
+ * Time: 18:41
+ * Comment: 科技产品展示验证器
  */
 
 namespace app\admin\validate;
 
-class Permission extends BasisValidate {
+class Display extends BasisValidate {
 
     /* 验证规则 */
     protected $rule = [
@@ -26,3 +26,4 @@ class Permission extends BasisValidate {
 
     ];
 }
+
