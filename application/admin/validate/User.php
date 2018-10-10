@@ -11,4 +11,18 @@ namespace app\admin\validate;
 
 class User extends BasisValidate {
 
+    /* 验证规则 */
+    protected $rule = [
+
+    ];
+
+    /* 验证消息 */
+    protected $field = [
+
+    ];
+
+    /* 验证场景 */
+    protected $scene = [
+
+    ];
 }

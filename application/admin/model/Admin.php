@@ -11,4 +11,15 @@ namespace app\admin\model;
 
 class Admin extends BasisModel {
 
+    /* 读存时间 */
+    protected $autoWriteTimestamp = 'datetime';
+
+    /* 对应的表 */
+    protected $table = 'tb_admin';
+
+    /* 关联的表 */
+    public function roles() {
+        return $this->belongsToMany('Role', 'tb_admin_role', 'role_id', 'user_id');
+    }
+
 }

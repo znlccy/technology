@@ -17,5 +17,12 @@ class Carousel extends BasisValidate {
     ];
 
     /* 验证消息 */
+    protected $field = [
 
+    ];
+
+    /* 验证场景 */
+    protected $scene = [
+
+    ];
 }
