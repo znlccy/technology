@@ -17,4 +17,13 @@ class Display extends BasisModel {
     /* 对应的表 */
     protected $table = 'tb_display';
 
+    /* 设置富文本 */
+    public function setRichTextAttr($value) {
+        return htmlspecialchars($value);
+    }
+
+    /* 获取富文本 */
+    public function getRichTextAttr($value) {
+        return htmlspecialchars_decode($value);
+    }
 }

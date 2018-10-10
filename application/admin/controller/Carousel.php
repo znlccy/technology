@@ -69,10 +69,7 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('listing')->check($validate_data);
 
         if (true !== $result) {
-            return json([
-                'code'      => '401',
-                'message'   => $this->carousel_validate->getError()
-            ]);
+            return $this->return_message('401', $this->carousel_validate->getError());
         }
 
         /* 筛选条件 */
@@ -123,16 +120,9 @@ class Carousel extends BasisController {
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($carousel) {
-            return json([
-                'code'      => '200',
-                'message'   => '获取轮播列表成功',
-                'data'      => $carousel
-            ]);
+            return $this->return_message('200', '获取轮播列表成功', $carousel);
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '获取轮播列表失败'
-            ]);
+            return $this->return_message('404', '获取轮播列表失败');
         }
     }
 
@@ -172,10 +162,7 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('save')->check($validate_data);
 
         if (true !== $result) {
-            return json([
-                'code'      => '401',
-                'message'   => $this->carousel_validate->getError()
-            ]);
+            return $this->return_message('401', $this->carousel_validate->getError());
         }
 
         if (empty($id)) {
@@ -188,11 +175,9 @@ class Carousel extends BasisController {
         }
 
         if ($result) {
-            $data = ['code' => '200', 'message' => '操作数据成功'];
-            return json($data);
+            return $this->return_message('200', '操作数据成功');
         } else {
-            $data = ['code' => '404', 'message' => '操作数据失败'];
-            return json($data);
+            return $this->return_message('404', '操作数据失败');
         }
     }
 
@@ -211,26 +196,16 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('detail')->check($validate_data);
 
         if (true !== $result) {
-            return json([
-                'code'      => '401',
-                'message'   => $this->carousel_validate->getError()
-            ]);
+            return $this->return_message('401', $this->carousel_validate->getError());
         }
 
         /* 返回数据 */
         $carousel = $this->carousel_model->where('id', '=', $id)->find();
 
         if ($carousel) {
-            return json([
-                'code'      => '200',
-                'message'   => '获取轮播详情成功',
-                'data'      => $carousel
-            ]);
+            return $this->return_message('200','获取轮播详情成功', $carousel);
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '获取轮播详情失败',
-            ]);
+            return $this->return_message('404', '获取轮播详情失败');
         }
     }
 
@@ -249,25 +224,16 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('delete')->check($validate_data);
 
         if (true !== $result) {
-            return json([
-                'code'      => '401',
-                'message'   => $this->carousel_validate->getError()
-            ]);
+            return $this->return_message('401', $this->carousel_validate->getError());
         }
 
         /* 返回结果 */
         $carousel = $this->carousel_model->where('id', '=', $id)->delete();
 
         if ($carousel) {
-            return json([
-                'code'      => '200',
-                'message'   => '删除数据成功',
-            ]);
+            return $this->return_message('200', '删除数据成功');
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '删除数据失败'
-            ]);
+            return $this->return_message('404', '删除数据失败');
         }
     }
 
