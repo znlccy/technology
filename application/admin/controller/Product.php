@@ -334,13 +334,18 @@ class Product extends BasisController {
 
         /* 返回数据 */
         $user = $this->user_model->where(['type' => '2', 'id' => $uid])->find();
-        $allocation = $user->product()->save();
-
-        if ($allocation) {
-            return $this->return_message(Status::SUCCESS, '产品分配成功');
+        if ($user) {
+            $product = $this->product_model->where('uid', '=',$uid)->find();
+            if ($product) {
+                return $this->return_message(Status::FAILURE, '产品已经分配了');
+            } else {
+                $this->product_model->where('id', '=', $pid)->update(['uid' => $uid]);
+                return $this->return_message(Status::SUCCESS, '产品分配成功');
+            }
         } else {
-            return $this->return_message(Status::FAILURE, '产品分配失败');
+            return $this->return_message(Status::FAILURE, '不存在该用户');
         }
+
     }
 
     /* 产品审核 */
@@ -368,6 +373,34 @@ class Product extends BasisController {
             return $this->return_message(Status::SUCCESS, '审核通过');
         } else {
             return $this->return_message(Status::FAILURE, '审核失败');
+        }
+    }
+
+    /* 产品拒绝 */
+    public function refuse() {
+
+        /* 接收参数 */
+        $id = request()->param('id');
+
+        /* 验证数据 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->product_validate->scene('refuse')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+        }
+
+        /* 返回数据 */
+        $refuse = $this->product_model->where('id',$id)->update(['status' => 0]);
+
+        if ($refuse) {
+            return $this->return_message(Status::SUCCESS, '拒绝通过');
+        } else {
+            return $this->return_message(Status::FAILURE, '拒绝失败');
         }
     }
 }
