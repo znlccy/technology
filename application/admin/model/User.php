@@ -16,4 +16,9 @@ class User extends BasisModel {
 
     /* 对应的表 */
     protected $table = 'tb_user';
+
+    /* 关联的表 */
+    public function product() {
+        return $this->hasOne('Product');
+    }
 }

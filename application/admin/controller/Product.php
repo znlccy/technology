@@ -11,6 +11,7 @@ namespace app\admin\controller;
 
 use app\admin\model\Product as ProductModel;
 use app\admin\status\Status;
+use app\admin\model\User as UserModel;
 use app\admin\validate\Product as ProductValidate;
 use think\Request;
 
@@ -18,6 +19,9 @@ class Product extends BasisController {
 
     /* 声明产品模型 */
     protected $product_model;
+
+    /* 声明合作者模型 */
+    protected $user_model;
 
     /* 声明产品验证器 */
     protected $product_validate;
@@ -29,6 +33,7 @@ class Product extends BasisController {
     public function __construct(Request $request = null) {
         parent::__construct($request);
         $this->product_model = new ProductModel();
+        $this->user_model = new UserModel();
         $this->product_validate = new ProductValidate();
         $this->product_page = config('pagination');
     }
@@ -115,7 +120,61 @@ class Product extends BasisController {
         }
 
         if ($purpose) {
-            $conditions['purpose'] = [];
+            $conditions['purpose'] = ['like', '%' . $purpose . '%'];
+        }
+
+        if ($amount_start && $amount_end) {
+            $conditions['amount'] = ['between', [$amount_start, $amount_end]];
+        }
+
+        if (is_null($recommend)) {
+            $conditions['recommend'] = ['in',[0,1]];
+        } else {
+            switch ($recommend) {
+                case 0:
+                    $conditions['recommend'] = $recommend;
+                    break;
+                case 1:
+                    $conditions['recommend'] = $recommend;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (is_null($status)) {
+            $conditions['status'] = ['in',[0,1]];
+        } else {
+            switch ($status) {
+                case 0:
+                    $conditions['status'] = $status;
+                    break;
+                case 1:
+                    $conditions['status'] = $status;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if ($create_start && $create_end) {
+            $conditions['create_time'] = ['between time', [$create_start, $create_end]];
+        }
+
+        if ($update_start && $update_end) {
+            $conditions['update_time'] = ['between time', [$update_start, $update_end]];
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model
+            ->where($conditions)
+            ->order('id', 'desc')
+            ->paginate($page_size, false, ['jump' => $jump_page]);
+
+        if ($product) {
+            return $this->return_message(Status::SUCCESS, '获取产品列表成功', $product);
+        } else {
+            return $this->return_message(Status::FAILURE, '获取产品列表失败');
         }
     }
 
@@ -135,6 +194,24 @@ class Product extends BasisController {
         $picture = request()->file('picture');
         $recommend = request()->param('recommend');
         $status = request()->param('status');
+
+        /* 移动文件 */
+        if ($proposal) {
+            $info = $proposal->move(ROOT_PATH . 'public' . DS . 'files');
+            if ($info) {
+                 $sub_path = str_replace('\\', '/', $info->getSaveName());
+                 $proposal = '/files/' . $sub_path;
+            }
+        }
+
+        /* 移动图片 */
+        if ($picture) {
+            $info = $picture->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $picture = '/images/' . $sub_path;
+            }
+        }
 
         /* 验证数据 */
         $validate_data = [
@@ -163,6 +240,12 @@ class Product extends BasisController {
         if (empty($id)) {
             $product = $this->product_model->save($validate_data);
         } else {
+            if (empty($proposal)) {
+                unset($validate_data['proposal']);
+            }
+            if (empty($picture)) {
+                unset($validate_data['picture']);
+            }
             $product = $this->product_model->save($validate_data, ['id' => $id]);
         }
 
@@ -226,6 +309,65 @@ class Product extends BasisController {
             return $this->return_message(Status::SUCCESS, '删除产品成功');
         } else {
             return $this->return_message(Status::FAILURE, '删除产品失败');
+        }
+    }
+
+    /* 产品分配 */
+    public function allocation() {
+
+        /* 接收参数 */
+        $pid = request()->param('pid');
+        $uid = request()->param('uid');
+
+        /* 验证数据 */
+        $validate_data = [
+            'pid'       => $pid,
+            'uid'       => $uid
+        ];
+
+        /* 验证结果 */
+        $result = $this->product_validate->scene('allocation')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+        }
+
+        /* 返回数据 */
+        $user = $this->user_model->where(['type' => '2', 'id' => $uid])->find();
+        $allocation = $user->product()->save();
+
+        if ($allocation) {
+            return $this->return_message(Status::SUCCESS, '产品分配成功');
+        } else {
+            return $this->return_message(Status::FAILURE, '产品分配失败');
+        }
+    }
+
+    /* 产品审核 */
+    public function auditing() {
+
+        /* 接收参数 */
+        $id = request()->param('id');
+
+        /* 验证数据 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->product_validate->scene('auditing')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+        }
+
+        /* 返回结果 */
+        $auditing = $this->product_model->where('id', $id)->update(['status' => 1]);
+
+        if ($auditing) {
+            return $this->return_message(Status::SUCCESS, '审核通过');
+        } else {
+            return $this->return_message(Status::FAILURE, '审核失败');
         }
     }
 }
