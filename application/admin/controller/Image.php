@@ -11,4 +11,8 @@ namespace app\admin\controller;
 
 class Image extends BasisController {
 
+    /* 多文本图片上传 */
+    public function upload() {
+
+    }
 }
