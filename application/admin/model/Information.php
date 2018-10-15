@@ -16,4 +16,20 @@ class Information extends BasisModel {
 
     /* 对应的表 */
     protected $table = 'tb_information';
+
+    /* 关联的表 */
+    public function user() {
+        return $this->belongsToMany('User', 'tb_user_info','user_id','info_id');
+    }
+
+    /* 设置富文本 */
+    public function setRichTextAttr($value) {
+        return htmlspecialchars($value);
+    }
+
+    /* 获取富文本 */
+    public function getRichTextAttr($value) {
+        return htmlspecialchars_decode($value);
+    }
+
 }

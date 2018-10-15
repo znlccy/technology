@@ -21,4 +21,9 @@ class User extends BasisModel {
     public function product() {
         return $this->hasOne('Product');
     }
+
+    /* 关联的表 */
+    public function information() {
+        return $this->belongsToMany('Information', 'tb_user_info','info_id', 'user_id');
+    }
 }
