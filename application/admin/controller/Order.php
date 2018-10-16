@@ -11,4 +11,7 @@ namespace app\admin\controller;
 
 class Order extends BasisController {
 
+    public function listing() {
+
+    }
 }

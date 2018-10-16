@@ -10,7 +10,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Region as RegionModel;
-use app\admin\status\Status;
+use app\admin\response\Code;
 use app\admin\validate\Region as RegionValidate;
 use think\Request;
 
@@ -46,11 +46,11 @@ class Region extends BasisController {
         $result = $this->region_validate->scene('listing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->region_validate->getError());
+            return $this->return_message(Code::INVALID, $this->region_validate->getError());
         }
 
         if (empty($level)) {
-            return $this->return_message(Status::FAILURE, '获取地区列表失败');
+            return $this->return_message(Code::FAILURE, '获取地区列表失败');
         }
 
         switch ($level) {
@@ -60,26 +60,26 @@ class Region extends BasisController {
                 break;
             case 2:
                 if (empty($id)) {
-                    return $this->return_message(Status::FAILURE, '获取地区列表失败');
+                    return $this->return_message(Code::FAILURE, '获取地区列表失败');
                 }
                 $region = $this->region_model->where(['level' => $level, 'top_id' => $id])->field('id,name')->order('id')->select();
                 break;
             case 3:
                 if (empty($id)) {
-                    return $this->return_message(Status::FAILURE, '获取地区列表失败');
+                    return $this->return_message(Code::FAILURE, '获取地区列表失败');
                 }
                 $region = $this->region_model->where(['level' => $level, 'top_id' => $id])->field('id,name')->order('id')->select();
                 break;
             default:
-                return $this->return_message(Status::FAILURE, '获取地区列表失败');
+                return $this->return_message(Code::FAILURE, '获取地区列表失败');
 
         }
 
         /* 返回数据 */
         if (!empty($region)) {
-            return $this->return_message(Status::SUCCESS, '地区列表获取成功',$region);
+            return $this->return_message(Code::SUCCESS, '地区列表获取成功',$region);
         } else {
-            return $this->return_message(Status::FAILURE, '地区列表获取失败');
+            return $this->return_message(Code::FAILURE, '地区列表获取失败');
         }
     }
 

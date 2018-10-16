@@ -10,7 +10,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Display as DisplayModel;
-use app\admin\status\Status;
+use app\admin\response\Code;
 use app\admin\validate\Display as DisplayValidate;
 use think\Request;
 
@@ -66,7 +66,7 @@ class Display extends BasisController {
         $result = $this->display_validate->scene('listing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->display_validate->getError());
+            return $this->return_message(Code::INVALID, $this->display_validate->getError());
         }
 
         /* 筛选条件 */
@@ -125,9 +125,9 @@ class Display extends BasisController {
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($display) {
-            return $this->return_message(Status::SUCCESS, '获取科技产品列表成功', $display);
+            return $this->return_message(Code::SUCCESS, '获取科技产品列表成功', $display);
         } else {
-            return $this->return_message(Status::FAILURE, '获取科技产品列表失败');
+            return $this->return_message(Code::FAILURE, '获取科技产品列表失败');
         }
 
     }
@@ -166,7 +166,7 @@ class Display extends BasisController {
         $result = $this->display_validate->scene('save')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->display_validate->getError());
+            return $this->return_message(Code::INVALID, $this->display_validate->getError());
         }
 
         /* 返回结果 */
@@ -177,9 +177,9 @@ class Display extends BasisController {
         }
 
         if ($display) {
-            return $this->return_message(Status::SUCCESS, '数据操作成功');
+            return $this->return_message(Code::SUCCESS, '数据操作成功');
         } else {
-            return $this->return_message(Status::FAILURE, '数据操作失败');
+            return $this->return_message(Code::FAILURE, '数据操作失败');
         }
     }
 
@@ -198,16 +198,16 @@ class Display extends BasisController {
         $result = $this->display_validate->scene('detail')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->display_validate->getError());
+            return $this->return_message(Code::INVALID, $this->display_validate->getError());
         }
 
         /* 返回结果 */
         $display = $this->display_model->where('id', '=', $id)->find();
 
         if ($display) {
-            return $this->return_message(Status::SUCCESS, '获取科技产品成功', $display);
+            return $this->return_message(Code::SUCCESS, '获取科技产品成功', $display);
         } else {
-            return $this->return_message(Status::FAILURE, '获取科技产品失败');
+            return $this->return_message(Code::FAILURE, '获取科技产品失败');
         }
     }
 
@@ -226,16 +226,16 @@ class Display extends BasisController {
         $result = $this->display_validate->scene('delete')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->display_validate->getError());
+            return $this->return_message(Code::INVALID, $this->display_validate->getError());
         }
 
         /* 返回数据 */
         $display = $this->display_model->where('id', '=', $id)->delete();
 
         if ($display) {
-            return $this->return_message(Status::SUCCESS, '删除科技产品成功');
+            return $this->return_message(Code::SUCCESS, '删除科技产品成功');
         } else {
-            return $this->return_message(Status::FAILURE, '删除科技产品失败');
+            return $this->return_message(Code::FAILURE, '删除科技产品失败');
         }
     }
 

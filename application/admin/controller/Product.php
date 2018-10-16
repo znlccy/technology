@@ -10,7 +10,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Product as ProductModel;
-use app\admin\status\Status;
+use app\admin\response\Code;
 use app\admin\model\User as UserModel;
 use app\admin\validate\Product as ProductValidate;
 use think\Request;
@@ -89,7 +89,7 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('listing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 筛选条件 */
@@ -172,9 +172,9 @@ class Product extends BasisController {
             ->paginate($page_size, false, ['jump' => $jump_page]);
 
         if ($product) {
-            return $this->return_message(Status::SUCCESS, '获取产品列表成功', $product);
+            return $this->return_message(Code::SUCCESS, '获取产品列表成功', $product);
         } else {
-            return $this->return_message(Status::FAILURE, '获取产品列表失败');
+            return $this->return_message(Code::FAILURE, '获取产品列表失败');
         }
     }
 
@@ -233,7 +233,7 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('save')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回结果 */
@@ -250,9 +250,9 @@ class Product extends BasisController {
         }
 
         if ($product) {
-            return $this->return_message(Status::SUCCESS, '操作数据成功');
+            return $this->return_message(Code::SUCCESS, '操作数据成功');
         } else {
-            return $this->return_message(Status::FAILURE, '操作数据失败');
+            return $this->return_message(Code::FAILURE, '操作数据失败');
         }
     }
 
@@ -271,16 +271,16 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('detail')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回结果 */
         $product = $this->product_model->where('id', $id)->find();
 
         if ($product) {
-            return $this->return_message(Status::SUCCESS, '获取产品详情成功', $product);
+            return $this->return_message(Code::SUCCESS, '获取产品详情成功', $product);
         } else {
-            return $this->return_message(Status::FAILURE, '获取产品详情失败');
+            return $this->return_message(Code::FAILURE, '获取产品详情失败');
         }
     }
 
@@ -299,16 +299,16 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('delete')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回结果 */
         $product = $this->product_model->where('id', $id)->delete();
 
         if ($product) {
-            return $this->return_message(Status::SUCCESS, '删除产品成功');
+            return $this->return_message(Code::SUCCESS, '删除产品成功');
         } else {
-            return $this->return_message(Status::FAILURE, '删除产品失败');
+            return $this->return_message(Code::FAILURE, '删除产品失败');
         }
     }
 
@@ -329,7 +329,7 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('allocation')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回数据 */
@@ -337,13 +337,13 @@ class Product extends BasisController {
         if ($user) {
             $product = $this->product_model->where('uid', '=',$uid)->find();
             if ($product) {
-                return $this->return_message(Status::FAILURE, '产品已经分配了');
+                return $this->return_message(Code::FAILURE, '产品已经分配了');
             } else {
                 $this->product_model->where('id', '=', $pid)->update(['uid' => $uid]);
-                return $this->return_message(Status::SUCCESS, '产品分配成功');
+                return $this->return_message(Code::SUCCESS, '产品分配成功');
             }
         } else {
-            return $this->return_message(Status::FAILURE, '不存在该用户');
+            return $this->return_message(Code::FAILURE, '不存在该用户');
         }
 
     }
@@ -363,16 +363,16 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('auditing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回结果 */
         $auditing = $this->product_model->where('id', $id)->update(['status' => 1]);
 
         if ($auditing) {
-            return $this->return_message(Status::SUCCESS, '审核通过');
+            return $this->return_message(Code::SUCCESS, '审核通过');
         } else {
-            return $this->return_message(Status::FAILURE, '审核失败');
+            return $this->return_message(Code::FAILURE, '审核失败');
         }
     }
 
@@ -391,16 +391,16 @@ class Product extends BasisController {
         $result = $this->product_validate->scene('refuse')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回数据 */
         $refuse = $this->product_model->where('id',$id)->update(['status' => 0]);
 
         if ($refuse) {
-            return $this->return_message(Status::SUCCESS, '拒绝通过');
+            return $this->return_message(Code::SUCCESS, '拒绝通过');
         } else {
-            return $this->return_message(Status::FAILURE, '拒绝失败');
+            return $this->return_message(Code::FAILURE, '拒绝失败');
         }
     }
 }

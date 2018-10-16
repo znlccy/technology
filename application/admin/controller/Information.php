@@ -10,7 +10,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Information as InformationModel;
-use app\admin\status\Status;
+use app\admin\response\Code;
 use app\admin\validate\Information as InformationValidate;
 use think\Request;
 
@@ -68,7 +68,7 @@ class Information extends BasisController {
         $result = $this->information_validate->scene('listing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->information_validate->getError());
+            return $this->return_message(Code::INVALID, $this->information_validate->getError());
         }
 
         /* 筛选条件 */
@@ -116,9 +116,9 @@ class Information extends BasisController {
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($information) {
-            return $this->return_message(Status::SUCCESS,'获取消息成功', $information);
+            return $this->return_message(Code::SUCCESS,'获取消息成功', $information);
         } else {
-            return $this->return_message(Status::FAILURE,'获取消息失败');
+            return $this->return_message(Code::FAILURE,'获取消息失败');
         }
     }
 
@@ -147,7 +147,7 @@ class Information extends BasisController {
         $result = $this->information_validate->scene('save')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->information_validate->getError());
+            return $this->return_message(Code::INVALID, $this->information_validate->getError());
         }
 
         /* 返回结果 */
@@ -158,9 +158,9 @@ class Information extends BasisController {
         }
 
         if ($information) {
-            return $this->return_message(Status::SUCCESS,'数据操作成功');
+            return $this->return_message(Code::SUCCESS,'数据操作成功');
         } else {
-            return $this->return_message(Status::FAILURE, '数据操作失败');
+            return $this->return_message(Code::FAILURE, '数据操作失败');
         }
     }
 
@@ -179,16 +179,16 @@ class Information extends BasisController {
         $result = $this->information_validate->scene('detail')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->information_validate->getError());
+            return $this->return_message(Code::INVALID, $this->information_validate->getError());
         }
 
         /* 返回结果 */
         $information = $this->information_model->where('id','=', $id)->find();
 
         if ($information) {
-            return $this->return_message(Status::SUCCESS, '获取消息详情成功',$information);
+            return $this->return_message(Code::SUCCESS, '获取消息详情成功',$information);
         } else {
-            return $this->return_message(Status::FAILURE, '获取消息详情失败');
+            return $this->return_message(Code::FAILURE, '获取消息详情失败');
         }
     }
 
@@ -207,16 +207,16 @@ class Information extends BasisController {
         $result = $this->information_validate->scene('delete')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->information_validate->getError());
+            return $this->return_message(Code::INVALID, $this->information_validate->getError());
         }
 
         /* 返回结果 */
         $information = $this->information_model->where('id', '=', $id)->delete();
 
         if ($information) {
-            return $this->return_message(Status::SUCCESS, '删除消息成功');
+            return $this->return_message(Code::SUCCESS, '删除消息成功');
         } else {
-            return $this->return_message(Status::FAILURE, '删除消息失败');
+            return $this->return_message(Code::FAILURE, '删除消息失败');
         }
     }
 

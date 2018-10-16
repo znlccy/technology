@@ -9,7 +9,11 @@
 
 namespace app\admin\controller;
 
+use app\admin\response\Code;
+use gmars\rbac\Rbac;
 use think\Controller;
+use think\Request;
+use think\Session;
 
 class BasisController extends Controller {
 
@@ -49,13 +53,13 @@ class BasisController extends Controller {
                 // 获取客户端传来的token
                 $client_token = $request->header('access-token');
                 if ( !(!empty($client_token) && $this->check_token($client_token)) ) {
-                    return $this->return_message(401, '请先登录系统'); // session('admin_token')
+                    return $this->return_message(Code::INVALID, '请先登录系统'); // session('admin_token')
                 }
                 $this->user_id = session('admin.id'); // 从session中获取  session('admin.id')
                 //检查管理员操作权限
                 $this->checkPriv();
             } else {
-                return $this->return_message(401, '请先登录系统');
+                return $this->return_message(Code::INVALID, '请先登录系统');
             }
         }
     }
@@ -92,13 +96,13 @@ class BasisController extends Controller {
             $rbacObj = new Rbac();
             $rbacObj->cachePermission($this->user_id);
             if (!$rbacObj->can($this->permission)) {
-                return $this->returnMsg(404, '没有操作权限');
+                return $this->return_message(Code::FAILURE, '没有操作权限');
             }
         }
     }
 
     /* 返回状态信息 */
-    public function return_message($code = '200', $message = '', $data = []) {
+    public function return_message($code = 200, $message = '', $data = []) {
 
         if (is_null($data) || empty($data)) {
             return json([

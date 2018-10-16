@@ -9,7 +9,7 @@
 
 namespace app\admin\controller;
 
-use app\admin\status\Status;
+use app\admin\response\Code;
 use think\Request;
 use app\index\model\Carousel as CarouselModel;
 use app\admin\validate\Carousel as CarouselValidate;
@@ -70,7 +70,7 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('listing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->carousel_validate->getError());
+            return $this->return_message(Code::INVALID, $this->carousel_validate->getError());
         }
 
         /* 筛选条件 */
@@ -121,9 +121,9 @@ class Carousel extends BasisController {
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($carousel) {
-            return $this->return_message(Status::SUCCESS, '获取轮播列表成功', $carousel);
+            return $this->return_message(Code::SUCCESS, '获取轮播列表成功', $carousel);
         } else {
-            return $this->return_message(Status::FAILURE, '获取轮播列表失败');
+            return $this->return_message(Code::FAILURE, '获取轮播列表失败');
         }
     }
 
@@ -163,7 +163,7 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('save')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->carousel_validate->getError());
+            return $this->return_message(Code::INVALID, $this->carousel_validate->getError());
         }
 
         if (empty($id)) {
@@ -176,9 +176,9 @@ class Carousel extends BasisController {
         }
 
         if ($result) {
-            return $this->return_message(Status::SUCCESS, '操作数据成功');
+            return $this->return_message(Code::SUCCESS, '操作数据成功');
         } else {
-            return $this->return_message(Status::FAILURE, '操作数据失败');
+            return $this->return_message(Code::FAILURE, '操作数据失败');
         }
     }
 
@@ -197,16 +197,16 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('detail')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALID, $this->carousel_validate->getError());
+            return $this->return_message(Code::INVALID, $this->carousel_validate->getError());
         }
 
         /* 返回数据 */
         $carousel = $this->carousel_model->where('id', '=', $id)->find();
 
         if ($carousel) {
-            return $this->return_message(Status::SUCCESS,'获取轮播详情成功', $carousel);
+            return $this->return_message(Code::SUCCESS,'获取轮播详情成功', $carousel);
         } else {
-            return $this->return_message(Status::FAILURE, '获取轮播详情失败');
+            return $this->return_message(Code::FAILURE, '获取轮播详情失败');
         }
     }
 
@@ -225,16 +225,16 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('delete')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Status::INVALIDs, $this->carousel_validate->getError());
+            return $this->return_message(Code::INVALIDs, $this->carousel_validate->getError());
         }
 
         /* 返回结果 */
         $carousel = $this->carousel_model->where('id', '=', $id)->delete();
 
         if ($carousel) {
-            return $this->return_message(Status::SUCCESS, '删除数据成功');
+            return $this->return_message(Code::SUCCESS, '删除数据成功');
         } else {
-            return $this->return_message(Status::FAILURE, '删除数据失败');
+            return $this->return_message(Code::FAILURE, '删除数据失败');
         }
     }
 

@@ -9,40 +9,32 @@
 
 namespace app\admin\controller;
 
+use app\admin\model\Role as RoleModel;
+use app\admin\model\RolePermission as RolePermissionModel;
+use app\admin\model\Permission as PermissionModel;
+use app\admin\response\Code;
+use app\admin\validate\Role as RoleValidate;
+use gmars\rbac\Rbac;
+use http\Env\Request;
+
 class Role extends BasisController {
 
-    /**
-     * @var
-     */
+    /* 声明角色模型 */
     protected $role_model;
 
-    /**
-     * 声明角色权限模型
-     * @var
-     */
+    /* 声明角色权限模型 */
     protected $role_permission_model;
 
-    /**
-     * 声明权限模型
-     * @var
-     */
+    /* 声明权限模型 */
     protected $permission_model;
 
-    /**
-     * @var
-     */
+    /* 声明角色验证器 */
     protected $role_validate;
 
-    /**
-     * @var
-     */
+    /* 声明角色分页 */
     protected $role_page;
 
-    /**
-     * 默认构造函数
-     * Role constructor.
-     * @param Request|null $request
-     */
+    /* 声明默认构造函数 */
     public function __construct(Request $request = null) {
         parent::__construct($request);
         $this->role_model = new RoleModel();
@@ -52,12 +44,8 @@ class Role extends BasisController {
         $this->role_page = config('pagination');
     }
 
-    /**
-     * 角色列表api接口
-     * @return \think\response\Json
-     * @throws \think\exception\DbException
-     */
-    public function entry() {
+    /* 角色列表 */
+    public function listing() {
         /* 获取客户端提供的数据 */
         $id = request()->param('id');
         $parent_id = request()->param('parent_id');
@@ -93,7 +81,7 @@ class Role extends BasisController {
         //验证结果
         $result   = $this->role_validate->scene('entry')->check($validate_data);
         if (!$result) {
-            return json(['code' => '401', 'message' => $this->role_validate->getError()]);
+            return $this->return_message(Code::INVALID, $this->role_validate->getError());
         }
 
         //筛选条件
@@ -144,18 +132,14 @@ class Role extends BasisController {
             ->order('id', 'asc')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
-        return json([
-            'code'      => '200',
-            'message'   => '获取角色名称成功',
-            'data'      => $role
-        ]);
+        if ($role) {
+            return $this->return_message(Code::SUCCESS, '获取角色列表成功', $role);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取角色列表失败');
+        }
     }
 
-    /**
-     * 添加更新角色api接口
-     * @return \think\response\Json
-     * @throws \think\Exception
-     */
+    /* 添加更新角色 */
     public function save() {
         /* 获取客户端提供的 */
         $id = request()->param('id');
@@ -181,7 +165,7 @@ class Role extends BasisController {
         //验证结果
         $result   = $this->role_validate->scene('save')->check($validate_data);
         if (!$result) {
-            return json(['code' => '401', 'message' => $this->role_validate->getError()]);
+            return $this->return_message(Code::INVALID, $this->role_validate->getError());
         }
 
         $rbac = new Rbac();
@@ -200,29 +184,17 @@ class Role extends BasisController {
             ];
             $update_result = $rbac->editRole($update_data);
             if($update_result) {
-                return json([
-                    'code'      => '200',
-                    'message'   => '更新角色成功'
-                ]);
+                return $this->return_message(Code::SUCCESS, '更新角色成功');
             }
         } else {
             $insert_result = $rbac->createRole($validate_data);
             if($insert_result) {
-                return json([
-                    'code'      => '200',
-                    'message'   => '添加角色成功'
-                ]);
+                return $this->return_message(Code::SUCCESS, '添加角色成功');
             }
         }
     }
 
-    /**
-     * 获取角色详情api接口
-     * @return \think\response\Json
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\ModelNotFoundException
-     * @throws \think\exception\DbException
-     */
+    /* 角色详情 */
     public function detail() {
         //获取客户端提交过来的数据
         $id = request()->param('id');
@@ -244,23 +216,13 @@ class Role extends BasisController {
         //返回数据
         $role = $this->role_model->where('id', $id)->find();
         if ($role) {
-            return json([
-                'code'      => '200',
-                'message'   => '获取信息成功',
-                'data'      => $role
-            ]);
+            return $this->return_message(Code::SUCCESS, '获取角色详情成功');
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '获取信息失败,数据不存在'
-            ]);
+            return $this->return_message(Code::FAILURE, '获取角色详情失败');
         }
     }
 
-    /**
-     * 删除角色api接口
-     * @return \think\response\Json
-     */
+    /* 删除角色 */
     public function delete() {
         //获取客户端提交过来的数据
         $id = request()->param('id');
@@ -273,30 +235,19 @@ class Role extends BasisController {
         //验证结果
         $result = $this->role_validate->scene('delete')->check($validate_data);
         if (!$result) {
-            return json([
-                'code'      => '401',
-                'message'   => $this->role_validate->getError()
-            ]);
+            return $this->return_message(Code::INVALID, $this->role_validate->getError());
         }
 
         //返回结果
         $manual_result = $this->role_model->where('id', $id)->delete();
         if ($manual_result) {
-            return json([
-                'code'      => '200',
-                'message'   => '删除数据成功'
-            ]);
+            return $this->return_message(Code::SUCCESS,'删除数据成功');
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '删除数据失败，数据不存在'
-            ]);
+            return $this->return_message(Code::FAILURE, '删除数据失败');
         }
     }
 
-    /**
-     * 分配角色权限api接口
-     */
+    /* 分配角色权限 */
     public function assign_role_permission() {
 
         /* 获取客户端提交过来的角色主键 */
@@ -323,29 +274,17 @@ class Role extends BasisController {
             $rbacObj = new Rbac();
             $assign_result = $rbacObj->assignRolePermission($role_id, $permission_id);
             if ($assign_result) {
-                return json([
-                    'code'      => '200',
-                    'message'   => '分配权限成功'
-                ]);
+                return $this->return_message(Code::SUCCESS, '分配权限成功');
             } else {
-                return json([
-                    'code'      => '401',
-                    'message'   => '分配权限失败'
-                ]);
+                return $this->return_message(Code::FAILURE, '分配权限失败');
             }
         } else {
             $rbacObj = new Rbac();
             $assign_result = $rbacObj->assignRolePermission($role_id, $permission_id);
             if ($assign_result) {
-                return json([
-                    'code'      => '200',
-                    'message'   => '分配权限成功'
-                ]);
+                return $this->return_message(Code::SUCCESS, '分配权限成功');
             } else {
-                return json([
-                    'code'      => '401',
-                    'message'   => '分配权限失败'
-                ]);
+                return $this->return_message(Code::FAILURE, '分配权限失败');
             }
         }
     }
@@ -385,16 +324,9 @@ class Role extends BasisController {
         $role_data = $this->build_trees($role_data, 0);
 
         if ($role_data) {
-            return json([
-                'code'      => '200',
-                'message'   => '角色信息',
-                'data'      => $role_data
-            ]);
+            return $this->return_message(Code::SUCCESS, '获取角色权限成功',$role_data);
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '数据库中不存在',
-            ]);
+            return $this->return_message(Code::FAILURE, '获取角色权限失败');
         }
     }
 
