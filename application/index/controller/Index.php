@@ -1,10 +1,73 @@
 <?php
 namespace app\index\controller;
 
-class Index
-{
-    public function index()
-    {
-        return '<style type="text/css">*{ padding: 0; margin: 0; } .think_default_text{ padding: 4px 48px;} a{color:#2E5CD5;cursor: pointer;text-decoration: none} a:hover{text-decoration:underline; } body{ background: #fff; font-family: "Century Gothic","Microsoft yahei"; color: #333;font-size:18px} h1{ font-size: 100px; font-weight: normal; margin-bottom: 12px; } p{ line-height: 1.6em; font-size: 42px }</style><div style="padding: 24px 48px;"> <h1>:)</h1><p> ThinkPHP V5<br/><span style="font-size:30px">十年磨一剑 - 为API开发设计的高性能框架</span></p><span style="font-size:22px;">[ V5.0 版本由 <a href="http://www.qiniu.com" target="qiniu">七牛云</a> 独家赞助发布 ]</span></div><script type="text/javascript" src="http://tajs.qq.com/stats?sId=9347272" charset="UTF-8"></script><script type="text/javascript" src="http://ad.topthink.com/Public/static/client.js"></script><thinkad id="ad_bd568ce7058a1091"></thinkad>';
+use app\index\model\Carousel as CarouselModel;
+use app\index\model\Display as DisplayModel;
+use app\index\model\Product as ProductModel;
+use app\index\model\Crowdfunding as CrowdfundingModel;
+use app\index\response\Code;
+use think\Request;
+
+class Index extends BasicController {
+
+    /* 声明轮播模型 */
+    protected $carousel_model;
+
+    /* 声明科技产品模型 */
+    protected $display_model;
+
+    /* 声明产品模型 */
+    protected $product_model;
+
+    /* 声明众筹模型 */
+    protected $crowdfunding_model;
+
+    /* 声明默认构造函数 */
+    public function __construct(Request $request = null) {
+        parent::__construct($request);
+        $this->carousel_model = new CarouselModel();
+        $this->display_model = new DisplayModel();
+        $this->product_model = new ProductModel();
+        $this->crowdfunding_model = new CrowdfundingModel();
+    }
+
+    /* 首页展示 */
+    public function index() {
+
+        /* 返回轮播 */
+        $carousel = $this->carousel_model
+            ->order('id', 'desc')
+            ->where('status', '=', '1')
+            ->limit(4)
+            ->select();
+
+        /* 返回科技产品 */
+        $display = $this->display_model
+            ->order('id', 'desc')
+            ->where('status', '=', '1')
+            ->limit(3)
+            ->select();
+
+        /* 返回产品 */
+        $product = $this->product_model
+            ->order('id', 'desc')
+            ->where('status', '=', '1')
+            ->limit(3)
+            ->select();
+
+        /* 返回众筹 */
+        $crowdfunding = $this->crowdfunding_model
+            ->order('id', 'desc')
+            ->limit(3)
+            ->select();
+
+        /* 返回最后数据 */
+        $index = array_merge(['carousel' => $carousel, 'display' => $display, 'product' => $product, 'crowdfunding' => $crowdfunding]);
+
+        if ($index) {
+            return $this->return_message(Code::SUCCESS, '获取首页数据成功', $index);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取首页数据失败');
+        }
     }
 }

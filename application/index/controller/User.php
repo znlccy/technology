@@ -11,4 +11,5 @@ namespace app\index\controller;
 
 class User extends BasicController {
 
+
 }

@@ -11,11 +11,19 @@ namespace app\index\validate;
 
 class Display extends BasicValidate {
 
-    public function listing() {
+    /* 验证规则 */
+    protected $rule = [
 
-    }
+    ];
 
-    public function detail() {
+    /* 验证字段 */
+    protected $field = [
 
-    }
+    ];
+
+    /* 验证场景 */
+    protected $scene = [
+
+    ];
+
 }
