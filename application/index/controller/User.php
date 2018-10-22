@@ -745,7 +745,14 @@ class User extends BasicController {
     /* 充值记录 */
     public function recharge_record() {
 
-        /* 接收 */
+        /* 接收参数 */
+        $uid = \session('user.id');
+
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID, '该用户还没有登录');
+        }
+
+
     }
 
     /* 我创建项目 */
