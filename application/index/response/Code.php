@@ -11,10 +11,13 @@ namespace app\index\response;
 
 class Code {
 
+    /* 成功状态码 */
     const SUCCESS = 200;
 
+    /* 失败状态码 */
     const FAILURE = 404;
 
+    /* 无效状态码 */
     const INVALID = 401;
 
 }

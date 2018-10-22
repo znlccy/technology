@@ -16,4 +16,14 @@ class Crowdfunding extends BasicModel {
 
     /* 对应的表 */
     protected $table = 'tb_crowdfunding';
+
+    /* 设置富文本 */
+    public function setRichText($value) {
+        return htmlspecialchars($value);
+    }
+
+    /* 获取富文本 */
+    public function getRichText($value) {
+        return htmlspecialchars_decode($value);
+    }
 }

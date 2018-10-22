@@ -10,14 +10,44 @@
 namespace app\index\controller;
 
 use app\index\model\User as UserModel;
+use app\index\model\Product as ProductModel;
+use app\index\model\Sms as SmsModel;
+use app\index\model\UserInfo as UserInfoModel;
+use app\index\model\UserCrowd as UserCrowdModel;
+use app\index\model\UserProduct as UserProduceModel;
+use app\index\model\Crowdfunding as CrowdfundingModel;
+use app\index\model\Purchase as PurchaseModel;
 use app\index\response\Code;
 use app\index\validate\User as UserValidate;
+use think\Config;
 use think\Request;
+use think\Session;
 
 class User extends BasicController {
 
     /* 声明用户模型 */
     protected $user_model;
+
+    /* 声明项目模型 */
+    protected $product_model;
+
+    /* 声明短信模型 */
+    protected $sms_model;
+
+    /* 声明用户信息模型 */
+    protected $user_info_model;
+
+    /* 声明用户众筹模型 */
+    protected $user_crowd_model;
+
+    /* 声明用户产品模型 */
+    protected $user_product_model;
+
+    /* 声明众筹模型 */
+    protected $crowd_funding_model;
+
+    /* 声明购买模型 */
+    protected $purchase_model;
 
     /* 声明用户验证器 */
     protected $user_validate;
@@ -29,6 +59,13 @@ class User extends BasicController {
     public function __construct(Request $request = null) {
         parent::__construct($request);
         $this->user_model = new UserModel();
+        $this->product_model = new ProductModel();
+        $this->sms_model = new SmsModel();
+        $this->user_info_model = new UserInfoModel();
+        $this->user_crowd_model = new UserCrowdModel();
+        $this->user_product_model = new UserProduceModel();
+        $this->crowd_funding_model = new CrowdfundingModel();
+        $this->purchase_model = new ProductModel();
         $this->user_validate = new UserValidate();
         $this->user_page = config('pagination');
     }
@@ -428,7 +465,76 @@ class User extends BasicController {
     public function crowd_funding() {
 
         /* 接收参数 */
+        $uid = session('user.id');
 
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID, '用户还没有登录');
+        }
+        $title = request()->param('title');
+        $target_amount = request()->param('target_amount');
+        $expired_time = request()->param('expired_time');
+        $rich_text = request()->param('rich_text');
+
+        $price = request()->param('price/a');
+        $introduce = request()->param('introduce/a');
+        $picture = request()->file('picture/a');
+
+        /* 移动图片 */
+        if ($picture) {
+            $info = $picture->move(ROOT_PATH . 'public' . 'images');
+            if ($info)  {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $picture = "/images/" . $sub_path;
+            }
+        }
+        $current_amount = request()->param('current_amount');
+        $purpose = request()->param('purpose');
+        $proposal = request()->file('proposal');
+        /* 移动项目计划书 */
+        if ($proposal) {
+            $info = $proposal->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $proposal = "images" . $sub_path;
+            }
+        }
+
+        /* 验证数据 */
+        $validate_data = [
+            'title'         => $title,
+            'target_amount' => $target_amount,
+            'expired_time'  => $expired_time,
+            'rich_text'     => $rich_text,
+
+            'current_amount'=> $current_amount,
+            'price'         => $price,
+            'introduce'     => $introduce,
+            'picture'       => $picture,
+            'proposal'      => $proposal,
+            'purpose'       => $purpose
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('crowd_funding')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+
+        $product = $this->product_model->insertGetId($validate_data);
+
+        unset($validate_data['title']);
+        unset($validate_data['target_amount']);
+        unset($validate_data['expired_time']);
+        unset($validate_data['rich_text']);
+        $crowd = $this->crowd_funding_model->insertGetId($validate_data);
+
+        if ($product && $crowd) {
+            return $this->return_message(Code::SUCCESS, '操作数据成功');
+        } else {
+            return $this->return_message(Code::FAILURE, '数据操作失败');
+        }
     }
 
     /* 创业者资料 */
@@ -556,38 +662,225 @@ class User extends BasicController {
         }
     }
 
-    /* 合作的茶品 */
+    /* 合作的产品 */
     public function cooperate_product() {
 
+        /* 接收参数 */
+        $uid = Session::get('user.id');
+
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID,'该用户还没有登录');
+        }
+
+        $page_size = request()->param('page_size',$this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page',$this->user_page['JUMP_PAGE']);
+
+        /* 验证数据 */
+        $validate_data = [
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('cooperate_product')->check($validate_data);
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product_id = $this->user_product_model->where('user_id', $uid)->field('product_id')->select();
+
+        $product = $this->product_model
+            ->where('id', 'in', $product_id)
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($product_id) {
+            return $this->return_message(Code::SUCCESS, '获取合作产品成功', $product);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取合作产品失败');
+        }
     }
 
     /* 参与的众筹 */
     public function partake_funding() {
 
         /* 接收参数 */
+        $uid = \session('user.id');
+
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID, '该用户还没有登录');
+        }
+
         $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
         $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
 
         /* 验证参数 */
+        $validate_data =[
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page,
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('partake_funding')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $crowd_id = $this->user_crowd_model->where('user_id', $uid)->field('crowd_id')->select();
+
+        $crowdfunding = $this->crowd_funding_model
+            ->where('id', 'in', $crowd_id)
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($crowdfunding) {
+            return $this->return_message(Code::SUCCESS, '获取众筹信息想成功', $crowdfunding);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取众筹信息失败');
+        }
+
     }
 
     /* 充值记录 */
     public function recharge_record() {
 
+        /* 接收 */
     }
 
-    protected function project() {
-
-    }
-
-    public function create_project() {
+    /* 我创建项目 */
+    public function product() {
 
         /* 接收参数 */
+        $uid = session('user.id');
 
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID, '用户还没有登录');
+        }
+
+        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
+
+        /* 验证参数 */
+        $validate_data = [
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('product')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model
+            ->order('id', 'asc')
+            ->where('uid',$uid)
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '获取我发布的项目成功',$product);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取我发布的项目失败');
+        }
     }
 
+    /* 创建项目 */
+    public function create_product() {
+
+        /* 接收参数 */
+        $uid = session('user.id');
+
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID, '该用户还没有登录');
+        }
+        $title = request()->param('title');
+        $region = request()->param('region');
+        $industry = request()->param('industry');
+        $turnover = request()->param('turnover');
+        $assets = request()->param('assets');
+            $purpose = request()->param('purpose');
+        $amount = request()->param('amount');
+        $proposal = request()->file('proposal');
+        /* 移动的项目计划书 */
+        if ($proposal) {
+            $info = $proposal->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $proposal = '/images/' . $sub_path;
+            }
+        }
+        $picture = request()->file('picture');
+        if ($picture) {
+            $info = $picture->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $picture = '/images/' . $sub_path;
+            }
+        }
+        $recommend = request()->param('recommend', 1);
+        $status = request()->param('status');
+
+        /* 验证数据 */
+        $validate_data = [
+            'uid'       => $uid,
+            'title'     => $title,
+            'region'    => $region,
+            'industry'  => $industry,
+            'turnover'  => $turnover,
+            'assets'    => $assets,
+            'purpose'   => $purpose,
+            'amount'    => $amount,
+            'recommend' => $recommend,
+            'status'    => $status,
+            'proposal'  => $proposal,
+            'picture'   => $picture
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('create_project')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model->save($validate_data);
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '创建项目成功');
+        } else {
+            return $this->return_message(Code::FAILURE, '创建项目失败');
+        }
+    }
+
+    /* 购买详情 */
     public function purchase_detail() {
 
+        /* 接收参数 */
+        $id = request()->param('id');
+
+        /* 验证参数 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('purchase_detail')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $purchase = $this->purchase_model->where('id', $id)->find();
+
+        if ($purchase) {
+            return $this->return_message(Code::SUCCESS, '购买详情成功',$purchase);
+        } else {
+            return $this->return_message(Code::FAILURE, '购买详情失败');
+        }
     }
 
 }
