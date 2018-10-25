@@ -47,6 +47,99 @@ class Purchase extends BasisController {
     /* 支付列表 */
     public function listing() {
 
+        /* 接收参数 */
+        $id = request()->param('id');
+        $crowd_id = request()->param('crowd_id');
+        $user_id = request()->param('user_id');
+        $amount_start = request()->param('amount_start');
+        $amount_end = request()->param('amount_end');
+        $pay_start = request()->param('pay_start');
+        $pay_end = request()->param('pay_end');
+        $order_id = request()->param('order_id');
+        $status = request()->param('status');
+        $create_start = request()->param('create_start');
+        $create_end = request()->param('create_end');
+        $update_start = request()->param('update_start');
+        $update_end = request()->param('update_end');
+        $page_size = request()->param('page_size');
+        $jump_page = request()->param('jump_page');
+
+        /* 验证数据 */
+        $validate_data = [
+            'id'            => $id,
+            'crowd_id'      => $crowd_id,
+            'user_id'       => $user_id,
+            'amount_start'  => $amount_start,
+            'amount_end'    => $amount_end,
+            'pay_start'     => $pay_start,
+            'pay_end'       => $pay_end,
+            'order_id'      => $order_id,
+            'status'        => $status,
+            'create_start'  => $create_start,
+            'create_end'    => $create_end,
+            'update_start'  => $update_start,
+            'update_end'    => $update_end,
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->purchase_validate->scene('listing')->scene($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->purchase_validate->getError());
+        }
+
+        /* 筛选条件 */
+        $conditions = [];
+
+        if ($id) {
+            $conditions['id'] = $id;
+        }
+
+        if ($crowd_id) {
+            $conditions['crowd_id'] = $crowd_id;
+        }
+
+        if ($user_id) {
+            $conditions['user_id'] = $user_id;
+        }
+
+        if ($amount_start && $amount_end) {
+            $conditions['amount'] = ['between', [$amount_start, $amount_end]];
+        }
+
+        if ($pay_start && $pay_end) {
+            $conditions['pay_time'] = ['between time', [$pay_start, $pay_end]];
+        }
+
+        if ($order_id) {
+            $conditions['order_id'] = $order_id;
+        }
+
+        if ($status) {
+            $conditions['status'] = $status;
+        }
+
+        if ($create_start && $create_end) {
+            $conditions['create_time'] = ['between time', [$create_start, $create_end]];
+        }
+
+        if ($update_start && $update_end) {
+            $conditions['update_time'] = ['between time', [$update_start, $update_end]];
+        }
+
+        /* 返回结果 */
+        $purchase = $this->purchase_model
+            ->where($conditions)
+            ->order('id', 'asc')
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($purchase) {
+            return $this->return_message(Code::SUCCESS, '获取支付列表成功', $purchase);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取支付列表失败');
+        }
     }
 
     /* 支付添加更新 */
@@ -74,7 +167,25 @@ class Purchase extends BasisController {
             'remark'    => $remark
         ];
 
-        /*  */
+        /* 验证结果 */
+        $result = $this->purchase_validate->scene('save')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->purchase_validate->getError());
+        }
+
+        /* 返回结果 */
+        if (empty($id)) {
+            $purchase = $this->purchase_model->save($validate_data);
+        } else {
+            $purchase = $this->purchase_model->save($validate_data, ['id' => $id]);
+        }
+
+        if ($purchase) {
+            return $this->return_message(Code::SUCCESS,'操作数据成功');
+        } else {
+            return $this->return_message(Code::FAILURE,'操作数据失败');
+        }
 
     }
 
@@ -97,6 +208,13 @@ class Purchase extends BasisController {
         }
 
         /* 返回结果 */
+        $purchase = $this->purchase_model->where('id',$id)->find();
+
+        if ($purchase) {
+            return $this->return_message(Code::SUCCESS, '查询支付详情成功', $purchase);
+        } else {
+            return $this->return_message(Code::FAILURE, '查询支付详情失败');
+        }
     }
 
     /* 支付删除 */
