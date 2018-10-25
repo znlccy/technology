@@ -181,7 +181,7 @@ class Admin extends BasisController {
     /**
      * 管理员列表api接口
      */
-    public function entry() {
+    public function listing() {
         /* 获取客户端提供的数据 */
         $id = request()->param('id');
         $mobile = request()->param('mobile');

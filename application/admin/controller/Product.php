@@ -353,54 +353,34 @@ class Product extends BasisController {
 
         /* 接收参数 */
         $id = request()->param('id');
+        $status = request()->param('status');
 
         /* 验证数据 */
         $validate_data = [
-            'id'        => $id
+            'id'        => $id,
+            'status'    => $status
         ];
 
         /* 验证结果 */
-        $result = $this->product_validate->scene('auditing')->check($validate_data);
+        $result = $this->crowdfunding_validate->scene('auditing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->product_validate->getError());
+            return $this->return_message(Code::INVALID, $this->crowdfunding_validate->getError());
         }
 
         /* 返回结果 */
-        $auditing = $this->product_model->where('id', $id)->update(['status' => 1]);
+        /* 此处状态为2,3 */
+        $auditing = $this->crowdfunding_model->where('id', '=', $id)->update(['status' => $status]);
 
         if ($auditing) {
-            return $this->return_message(Code::SUCCESS, '审核通过');
+            if ($status === 2) {
+                return $this->return_message(Code::SUCCESS, '审核成功');
+            }
+            if ($status === 3) {
+                return $this->return_message(Code::FORBIDDEN, '审核失败');
+            }
         } else {
             return $this->return_message(Code::FAILURE, '审核失败');
-        }
-    }
-
-    /* 产品拒绝 */
-    public function refuse() {
-
-        /* 接收参数 */
-        $id = request()->param('id');
-
-        /* 验证数据 */
-        $validate_data = [
-            'id'        => $id
-        ];
-
-        /* 验证结果 */
-        $result = $this->product_validate->scene('refuse')->check($validate_data);
-
-        if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->product_validate->getError());
-        }
-
-        /* 返回数据 */
-        $refuse = $this->product_model->where('id',$id)->update(['status' => 0]);
-
-        if ($refuse) {
-            return $this->return_message(Code::SUCCESS, '拒绝通过');
-        } else {
-            return $this->return_message(Code::FAILURE, '拒绝失败');
         }
     }
 }

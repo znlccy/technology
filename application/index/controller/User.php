@@ -752,6 +752,23 @@ class User extends BasicController {
             return $this->return_message(Code::INVALID, '该用户还没有登录');
         }
 
+        $page_size = request()->param('page_size',$this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page',$this->user_page['JUMP_PAGE']);
+
+        /* 验证参数 */
+        $validate_data = [
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('recharge_record')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
 
     }
 

@@ -289,4 +289,10 @@ return [
         'PAGE_SIZE'         => 8,
         'JUMP_PAGE'         => 1
     ],
+
+    //支付配置
+    'pay'           => [
+        'apiKey'    => 'sk_test_nbLa9SD84qfHezj1qD1WfPeTzcy',
+        'appId'     => 'app_jj9irPO80arTrDOmzcy'
+    ],
 ];
