@@ -192,8 +192,8 @@ class Product extends BasisController {
         $amount = request()->param('amount');
         $proposal = request()->file('proposal');
         $picture = request()->file('picture');
-        $recommend = request()->param('recommend');
-        $status = request()->param('status');
+        $recommend = request()->param('recommend',1);
+        $status = request()->param('status',0);
 
         /* 移动文件 */
         if ($proposal) {
@@ -334,13 +334,21 @@ class Product extends BasisController {
 
         /* 返回数据 */
         $user = $this->user_model->where(['type' => '2', 'id' => $uid])->find();
+
         if ($user) {
-            $product = $this->product_model->where('uid', '=',$uid)->find();
-            if ($product) {
-                return $this->return_message(Code::FAILURE, '产品已经分配了');
+
+            $product = $this->product_model->where('id', $pid)->find();
+
+            if (empty($product)) {
+                return $this->return_message(Code::FAILURE, '产品不存在');
             } else {
-                $this->product_model->where('id', '=', $pid)->update(['uid' => $uid]);
-                return $this->return_message(Code::SUCCESS, '产品分配成功');
+                $allocation = $this->product_model->where('uid', '=',$uid)->find();
+                if ($allocation) {
+                    return $this->return_message(Code::FORBIDDEN, '产品已经分配了');
+                } else {
+                    $this->product_model->where('id', '=', $pid)->update(['uid' => $uid]);
+                    return $this->return_message(Code::SUCCESS, '产品分配成功');
+                }
             }
         } else {
             return $this->return_message(Code::FAILURE, '不存在该用户');
@@ -362,25 +370,36 @@ class Product extends BasisController {
         ];
 
         /* 验证结果 */
-        $result = $this->crowdfunding_validate->scene('auditing')->check($validate_data);
+        $result = $this->product_validate->scene('auditing')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->crowdfunding_validate->getError());
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
         }
 
         /* 返回结果 */
-        /* 此处状态为2,3 */
-        $auditing = $this->crowdfunding_model->where('id', '=', $id)->update(['status' => $status]);
-
-        if ($auditing) {
-            if ($status === 2) {
-                return $this->return_message(Code::SUCCESS, '审核成功');
-            }
-            if ($status === 3) {
-                return $this->return_message(Code::FORBIDDEN, '审核失败');
-            }
+        $product = $this->product_model->where('id', $id)->find();
+        if (empty($product)) {
+            return $this->return_message(Code::FAILURE, '产品不存在');
         } else {
-            return $this->return_message(Code::FAILURE, '审核失败');
+            /* 此处状态为2,3 */
+            if ($status == 1) {
+                return $this->return_message(Code::FORBIDDEN, '审核状态错误');
+            } else {
+                $auditing = $this->product_model->where('id', '=', $id)->update(['status' => $status]);
+
+                if ($auditing) {
+
+                    if ($status == 2) {
+                        return $this->return_message(Code::SUCCESS, '审核成功');
+                    }
+                    if ($status == 3) {
+                        return $this->return_message(Code::FORBIDDEN, '审核失败');
+                    }
+                } else {
+                    return $this->return_message(Code::FAILURE, '已经审核了');
+                }
+            }
         }
+
     }
 }
