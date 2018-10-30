@@ -279,13 +279,18 @@ class Permission extends BasisController {
         }
 
         //返回结果
-        $delete = $this->permission_model->where('id', $id)->delete();
-        if ($delete) {
-            return $this->return_message(Code::SUCCESS, '删除权限成功');
+        if ($id == 1) {
+            return $this->return_message(Code::FORBIDDEN, '超级管理员不允许删除');
         } else {
-            return $this->return_message(Code::FAILURE, '删除权限失败');
+            $delete = $this->permission_model->where('id', $id)->delete();
+            if ($delete) {
+                return $this->return_message(Code::SUCCESS, '删除权限成功');
+            } else {
+                return $this->return_message(Code::FAILURE, '删除权限失败');
+            }
         }
     }
+
 
     /* 实现无限极分类 */
     private function get_tree($arr,$pid,$step){
