@@ -116,6 +116,13 @@ class User extends BasicController {
         return json(['code' => '200', 'message'   => '登录成功',  'access_token' => $token, 'mobile' => $mobile]);
     }
 
+    /* 选择用户角色 */
+    public function role() {
+
+        /* 接收参数 */
+
+    }
+
     /**
      * 用户注册api接口
      */

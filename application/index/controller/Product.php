@@ -91,4 +91,27 @@ class Product extends BasicController {
             return $this->return_message(Code::FAILURE, '获取产品详情失败');
         }
     }
+
+    /* 约谈合作方 */
+    public function interview() {
+
+        /* 接收参数 */
+        $pid = request()->post('pid');
+        $uid = request()->param('uid');
+
+        /* 验证数据 */
+        $validate_data = [
+            'pid'       => $pid,
+            'uid'       => $uid
+        ];
+
+        /* 验证结果 */
+        $result = $this->product_validate->scene('interview')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->product_validate->getError());
+        }
+
+        /* 返回数据 */
+    }
 }
