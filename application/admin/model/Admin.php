@@ -18,7 +18,7 @@ class Admin extends BasisModel {
     protected $table = 'tb_admin';
 
     /* 关联的表 */
-    public function roles() {
+    public function role() {
         return $this->belongsToMany('Role', 'tb_admin_role', 'role_id', 'user_id');
     }
 

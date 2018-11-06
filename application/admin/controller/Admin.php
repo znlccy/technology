@@ -18,6 +18,7 @@ use app\admin\validate\Admin as AdminValidate;
 use gmars\rbac\Rbac;
 use think\Request;
 use think\Session;
+use think\Validate;
 
 class Admin extends BasisController {
 
@@ -478,7 +479,7 @@ class Admin extends BasisController {
     public function spinner() {
         $roles = $this->role_model->where('status', '=', '1')->field('id, name')->select();
         if (!empty($roles)) {
-            return $this->return_message(Code::SUCCESS, '获取角色列表成功');
+            return $this->return_message(Code::SUCCESS, '获取角色列表成功', $roles);
         } else {
             return $this->return_message(Code::FAILURE, '获取角色列表失败');
         }

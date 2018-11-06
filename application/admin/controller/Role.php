@@ -15,7 +15,7 @@ use app\admin\model\Permission as PermissionModel;
 use app\admin\response\Code;
 use app\admin\validate\Role as RoleValidate;
 use gmars\rbac\Rbac;
-use http\Env\Request;
+use think\Request;
 
 class Role extends BasisController {
 
@@ -216,7 +216,7 @@ class Role extends BasisController {
         //返回数据
         $role = $this->role_model->where('id', $id)->find();
         if ($role) {
-            return $this->return_message(Code::SUCCESS, '获取角色详情成功');
+            return $this->return_message(Code::SUCCESS, '获取角色详情成功', $role);
         } else {
             return $this->return_message(Code::FAILURE, '获取角色详情失败');
         }
