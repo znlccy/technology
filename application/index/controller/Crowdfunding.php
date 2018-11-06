@@ -56,7 +56,6 @@ class Crowdfunding extends BasicController {
         /* 返回结果 */
         $crowdfunding = $this->crowdfunding_model
             ->order('id', 'desc')
-            ->where('status', '=', '1')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($crowdfunding) {

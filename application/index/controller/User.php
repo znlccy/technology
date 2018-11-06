@@ -16,6 +16,7 @@ use app\index\model\UserInfo as UserInfoModel;
 use app\index\model\UserCrowd as UserCrowdModel;
 use app\index\model\UserProduct as UserProduceModel;
 use app\index\model\Crowdfunding as CrowdfundingModel;
+use app\index\model\Information as InformationModel;
 use app\index\model\Purchase as PurchaseModel;
 use app\index\response\Code;
 use app\index\validate\User as UserValidate;
@@ -49,6 +50,9 @@ class User extends BasicController {
     /* 声明购买模型 */
     protected $purchase_model;
 
+    /* 声明通知消息模型 */
+    protected $information_model;
+
     /* 声明用户验证器 */
     protected $user_validate;
 
@@ -65,6 +69,7 @@ class User extends BasicController {
         $this->user_crowd_model = new UserCrowdModel();
         $this->user_product_model = new UserProduceModel();
         $this->crowd_funding_model = new CrowdfundingModel();
+        $this->information_model = new InformationModel();
         $this->purchase_model = new ProductModel();
         $this->user_validate = new UserValidate();
         $this->user_page = config('pagination');

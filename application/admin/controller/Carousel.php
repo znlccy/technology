@@ -121,7 +121,7 @@ class Carousel extends BasisController {
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($carousel) {
-            return $this->return_message(Code::SUCCESS, '获取轮播列表成功', $carousel);
+            return $this->return_message(   Code::SUCCESS, '获取轮播列表成功', $carousel);
         } else {
             return $this->return_message(Code::FAILURE, '获取轮播列表失败');
         }
@@ -225,7 +225,7 @@ class Carousel extends BasisController {
         $result = $this->carousel_validate->scene('delete')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Code::INVALIDs, $this->carousel_validate->getError());
+            return $this->return_message(Code::INVALID, $this->carousel_validate->getError());
         }
 
         /* 返回结果 */
