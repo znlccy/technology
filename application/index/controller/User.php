@@ -18,6 +18,7 @@ use app\index\model\UserProduct as UserProduceModel;
 use app\index\model\Crowdfunding as CrowdfundingModel;
 use app\index\model\Information as InformationModel;
 use app\index\model\Purchase as PurchaseModel;
+use app\index\model\Order as OrderModel;
 use app\index\response\Code;
 use app\index\validate\User as UserValidate;
 use think\Config;
@@ -53,6 +54,9 @@ class User extends BasicController {
     /* 声明通知消息模型 */
     protected $information_model;
 
+    /* 声明订单模型 */
+    protected $order_model;
+
     /* 声明用户验证器 */
     protected $user_validate;
 
@@ -70,7 +74,8 @@ class User extends BasicController {
         $this->user_product_model = new UserProduceModel();
         $this->crowd_funding_model = new CrowdfundingModel();
         $this->information_model = new InformationModel();
-        $this->purchase_model = new ProductModel();
+        $this->purchase_model = new PurchaseModel();
+        $this->order_model = new OrderModel();
         $this->user_validate = new UserValidate();
         $this->user_page = config('pagination');
     }
@@ -78,7 +83,8 @@ class User extends BasicController {
     /**
      * 用户登录api接口
      */
-    public function login() {
+    public function login()
+    {
 
         //接收客户端提交的数据
         $mobile = request()->param('mobile');
@@ -87,13 +93,13 @@ class User extends BasicController {
 
         /* 验证规则 */
         $validate_data = [
-            'mobile'        => $mobile,
-            'password'      => $password,
-            'verify'        => $verify,
+            'mobile' => $mobile,
+            'password' => $password,
+            'verify' => $verify,
         ];
 
         //实例化验证器
-        $result   = $this->user_validate->scene('login')->check($validate_data);
+        $result = $this->user_validate->scene('login')->check($validate_data);
 
         if (!$result) {
             return json(['code' => '401', 'message' => $this->user_validate->getError()]);
@@ -104,13 +110,13 @@ class User extends BasicController {
             ->find();
 
         $data = [
-            'login_time'        => date("Y-m-d H:s:i", time()),
-            'login_ip'          => request()->ip()
+            'login_time' => date("Y-m-d H:s:i", time()),
+            'login_ip' => request()->ip()
         ];
 
         $this->user_model->save($data, ['id' => $user['id']]);
 
-        if (empty($user) ) {
+        if (empty($user)) {
             return json(['code' => '404', 'message' => '数据库中还没有该用户或者输入的账号密码错误']);
         }
 
@@ -118,14 +124,7 @@ class User extends BasicController {
         $token = general_token($mobile, $password);
         Session::set('access_token', $token);
 
-        return json(['code' => '200', 'message'   => '登录成功',  'access_token' => $token, 'mobile' => $mobile]);
-    }
-
-    /* 选择用户角色 */
-    public function role() {
-
-        /* 接收参数 */
-
+        return json(['code' => '200', 'message' => '登录成功', 'access_token' => $token, 'mobile' => $mobile]);
     }
 
     /**
@@ -135,6 +134,7 @@ class User extends BasicController {
         /* 获取客户端提交过来的数据 */
         $mobile = request()->param('mobile');
         $password = request()->param('password');
+        $type = request()->param('type');
         $verify = request()->param('verify');
         $code = request()->param('code');
 
@@ -143,6 +143,7 @@ class User extends BasicController {
             'mobile'        => $mobile,
             'password'      => $password,
             'verify'        => $verify,
+            'type'          => $type,
             'code'          => $code,
         ];
 
@@ -336,7 +337,7 @@ class User extends BasicController {
         $mobile = Session::get('user.mobile');
         $username = request()->param('username');
         $email = request()->param('email');
-        $company = request()->param('company');
+        $enterprise = request()->param('enterprise');
         $industry = request()->param('industry');
         $duty = request()->param('duty');
 
@@ -345,7 +346,7 @@ class User extends BasicController {
             'mobile'        => $mobile,
             'username'      => $username,
             'email'         => $email,
-            'company'       => $company,
+            'enterprise'    => $enterprise,
             'industry'      => $industry,
             'duty'          => $duty,
         ];
@@ -533,24 +534,26 @@ class User extends BasicController {
             return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
-
-        $product = $this->product_model->insertGetId($validate_data);
-
-        unset($validate_data['title']);
-        unset($validate_data['target_amount']);
+        /*unset($validate_data['target_amount']);
         unset($validate_data['expired_time']);
         unset($validate_data['rich_text']);
+        unset($validate_data['current_amount']);
+        unset($validate_data['price']);
+        unset($validate_data['introduce']);
+        $product = $this->product_model->insertGetId($validate_data);*/
+
+
         $crowd = $this->crowd_funding_model->insertGetId($validate_data);
 
-        if ($product && $crowd) {
+        if ($crowd) {
             return $this->return_message(Code::SUCCESS, '操作数据成功');
         } else {
             return $this->return_message(Code::FAILURE, '数据操作失败');
         }
     }
 
-    /* 创业者资料 */
-    public function entrepreneur() {
+    /* 用户身份资料 */
+    public function identify() {
 
         /* 接收参数 */
         $uid = session('user.id');
@@ -559,119 +562,93 @@ class User extends BasicController {
         } else {
             $mobile = session('user.mobile');
         }
+        /* 接收参数 */
+        $id = request()->param('id');
+        $type = intval(request()->param('type/d'));
+        $username = request()->param('username');
+        $password = request()->param('password');
+        $confirm_password = request()->param('confirm_password');
+        $mobile = request()->param('mobile');
         $enterprise = request()->param('enterprise');
         $introduce = request()->param('introduce');
         $industry = request()->param('industry');
         $capital = request()->param('capital');
-        $revenue = request()->param('revenue', 0);
+        $revenue = request()->param('revenue');
         $assets = request()->param('assets');
         $address = request()->param('address');
-        $username = request()->param('username');
         $duty = request()->param('duty');
         $department = request()->param('department');
-        $mobile = request()->param('mobile');
-        $email = request()->param('email');
+        $phone = request()->param('phone');
         $wechat = request()->param('wechat');
+        $email = request()->param('email');
         $link = request()->param('link');
-        $type = 1;
-
-        /* 验证参数 */
-        $validate_data = [
-            'enterprise'    => $enterprise,
-            'introduce'     => $introduce,
-            'industry'      => $industry,
-            'capital'       => $capital,
-            'revenue'       => $revenue,
-            'assets'        => $assets,
-            'address'       => $address,
-            'username'      => $username,
-            'duty'          => $duty,
-            'department'    => $department,
-            'mobile'        => $mobile,
-            'email'         => $email,
-            'wechat'        => $wechat,
-            'link'          => $link,
-            'type'          => $type
-        ];
-
-        /* 验证结果 */
-        $result = $this->user_validate->scene('entrepreneur')->check($validate_data);
-
-        if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->user_validate->getError());
-        }
-
-        /* 返回数据 */
-        $entrepreneur = $this->user_model->save($validate_data,['id' ,$uid]);
-
-        if ($entrepreneur) {
-            return $this->return_message(Code::SUCCESS, '操作数据成功');
-        } else {
-            return $this->return_message(Code::FAILURE, '操作数据失败');
-        }
-
-    }
-
-    /* 合作者资料 */
-    public function collaborator() {
-
-        /* 接收参数 */
-        $uid = session('user.id');
-        if (!$uid) {
-            return $this->return_message(Code::FAILURE, '用户还没有登录');
-        } else {
-            $mobile = session('user.mobile');
-        }
-        $enterprise = request()->param('enterprise');
-        $capital = request()->param('capital');
-        $address = request()->param('address');
-        $industry = request()->param('industry');
-        $investment = request()->param('investment');
-        $amount = request()->param('amount');
+        $location = request()->param('location');
         $textarea = request()->param('textarea');
-        $username = request()->param('username');
-        $duty = request()->param('duty');
-        $department = request()->param('department');
-        $mobile = request()->param('mobile');
-        $wechat = request()->param('wechat');
-        $email = request()->param('email');
-        $link = request()->param('link');
-        $type = 2;
 
         /* 验证数据 */
         $validate_data = [
-            'enterprise'    => $enterprise,
-            'capital'       => $capital,
-            'address'       => $address,
-            'industry'      => $industry,
-            'investment'    => $investment,
-            'amount'        => $amount,
-            'textarea'      => $textarea,
-            'username'      => $username,
-            'duty'          => $duty,
-            'department'    => $department,
-            'mobile'        => $mobile,
-            'wechat'        => $wechat,
-            'email'         => $email,
-            'link'          => $link,
-            'type'          => $type
+            'id'                => $id,
+            'username'          => $username,
+            'password'          => md5($password),
+            'confirm_password'  => $confirm_password,
+            'mobile'            => $mobile,
+            'enterprise'        => $enterprise,
+            'introduce'         => $introduce,
+            'industry'          => $industry,
+            'capital'           => $capital,
+            'revenue'           => $revenue,
+            'assets'            => $assets,
+            'address'           => $address,
+            'duty'              => $duty,
+            'department'        => $department,
+            'phone'             => $phone,
+            'wechat'            => $wechat,
+            'email'             => $email,
+            'link'              => $link,
+            'location'          => $location,
+            'textarea'          => $textarea,
+            'type'              => $type
         ];
 
-        /* 验证结果 */
-        $result = $this->user_validate->scene('collaborator')->check($validate_data);
-
-        if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        switch ($type) {
+            case 1:
+                $result = $this->user_validate->scene('entrepreneur')->check($validate_data);
+                if (true !== $result) {
+                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                }
+                unset($validate_data['location']);
+                unset($validate_data['textarea']);
+                unset($validate_data['confirm_password']);
+                if (empty($id)) {
+                    $user = $this->user_model->save($validate_data);
+                } else {
+                    $user = $this->user_model->save($validate_data, ['id' => $id]);
+                }
+                break;
+            case 2:
+                $result = $this->user_validate->scene('collaborator')->check($validate_data);
+                if (true !== $result) {
+                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                }
+                unset($validate_data['introduce']);
+                unset($validate_data['revenue']);
+                unset($validate_data['confirm_password']);
+                if (empty($id)) {
+                    $user = $this->user_model->save($validate_data);
+                } else {
+                    $user = $this->user_model->save($validate_data, ['id' => $id]);
+                }
+                break;
+            default:
+                break;
         }
 
-        /* 返回结果 */
-        $collaborator = $this->user_model->save($validate_data, ['id' => $uid]);
-
-        if ($collaborator) {
+        if ($user) {
             return $this->return_message(Code::SUCCESS, '数据操作成功');
         } else {
             return $this->return_message(Code::FAILURE, '数据操作失败');
         }
+
     }
 
     /* 合作的产品 */
@@ -699,14 +676,13 @@ class User extends BasicController {
             return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
-        /* 返回结果 */
-        $product_id = $this->user_product_model->where('user_id', $uid)->field('product_id')->select();
-
-        $product = $this->product_model
-            ->where('id', 'in', $product_id)
+        $product = $this->user_product_model
+            ->alias('up')
+            ->where('up.user_id', $uid)
+            ->join('tb_product tp','tp.id = up.product_id')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
-        if ($product_id) {
+        if ($product) {
             return $this->return_message(Code::SUCCESS, '获取合作产品成功', $product);
         } else {
             return $this->return_message(Code::FAILURE, '获取合作产品失败');
@@ -739,11 +715,13 @@ class User extends BasicController {
             return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
-        /* 返回结果 */
-        $crowd_id = $this->user_crowd_model->where('user_id', $uid)->field('crowd_id')->select();
 
-        $crowdfunding = $this->crowd_funding_model
-            ->where('id', 'in', $crowd_id)
+        /* 返回结果 */
+
+        $crowdfunding = $this->user_crowd_model
+            ->alias('cm')
+            ->where('cm.user_id', $uid)
+            ->join('tb_crowdfunding tc','tc.id = cm.crowd_id')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($crowdfunding) {
@@ -781,6 +759,17 @@ class User extends BasicController {
         }
 
         /* 返回结果 */
+        $recharge = $this->purchase_model
+            ->alias('pm')
+            ->where('pm.user_id', $uid)
+            ->join('tb_order to', 'to.order_id = pm.order_id')
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($recharge) {
+            return $this->return_message(Code::SUCCESS, '获取用户支付记录成功', $recharge);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取用户支付记录失败');
+        }
 
     }
 
@@ -811,9 +800,10 @@ class User extends BasicController {
         }
 
         /* 返回结果 */
-        $product = $this->product_model
-            ->order('id', 'asc')
-            ->where('uid',$uid)
+        $product = $this->user_product_model
+            ->alias('pm')
+            ->where('pm.user_id', $uid)
+            ->join('tb_product tp','tp.id = pm.product_id')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($product) {
@@ -895,11 +885,11 @@ class User extends BasicController {
     public function purchase_detail() {
 
         /* 接收参数 */
-        $id = request()->param('id');
+        $order_id = request()->param('order_id');
 
         /* 验证参数 */
         $validate_data = [
-            'id'        => $id
+            'order_id'        => $order_id
         ];
 
         /* 验证结果 */
@@ -910,7 +900,7 @@ class User extends BasicController {
         }
 
         /* 返回结果 */
-        $purchase = $this->purchase_model->where('id', $id)->find();
+        $purchase = $this->order_model->where('order_id', $order_id)->find();
 
         if ($purchase) {
             return $this->return_message(Code::SUCCESS, '购买详情成功',$purchase);
@@ -918,5 +908,4 @@ class User extends BasicController {
             return $this->return_message(Code::FAILURE, '购买详情失败');
         }
     }
-
 }
