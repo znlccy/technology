@@ -57,11 +57,11 @@ class Permission extends BasisController {
         $tree = $this->build_trees($node, 0);
 
         //返回数据
-        if ($tree) {
-            return $this->return_message(Code::SUCCESS, '获取权限节点成功', $tree);
-        } else {
-            return $this->return_message(Code::FAILURE, '获取权限节点失败');
-        }
+        return json([
+            'code'      => '200',
+            'message'   => '获得权限节点成功',
+            'data'      => $tree
+        ]);
 
     }
 
