@@ -54,6 +54,15 @@ class Permission extends BasisController {
             ->select();
 
         //生成权限树
+        $permission_ids = [];
+        $nodes = [];
+        foreach ($node as $value) {
+            if (!in_array($value['permission_id'], $permission_ids)) {
+                $nodes[] = $value;
+            }
+            $permission_ids[] = $value['permission_id'];
+        }
+
         $tree = $this->build_trees($node, 0);
 
         //返回数据
