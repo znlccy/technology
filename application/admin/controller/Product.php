@@ -196,7 +196,6 @@ class Product extends BasisController {
         $purpose = request()->param('purpose');
         $amount = request()->param('amount');
         $proposal = request()->file('proposal');
-        $type = request()->param('type');
         $picture = request()->file('picture');
         $recommend = request()->param('recommend',1);
         $status = request()->param('status',0);
@@ -240,7 +239,6 @@ class Product extends BasisController {
             'purpose'   => $purpose,
             'amount'    => $amount,
             'proposal'  => $proposal,
-            'type'      => $type,
             'picture'   => $picture,
             'recommend' => $recommend,
             'status'    => $status
@@ -373,7 +371,6 @@ class Product extends BasisController {
                 return $this->return_message(Code::FAILURE, '分配成果失败');
             }
         }
-
     }
 
     /* 产品审核 */
