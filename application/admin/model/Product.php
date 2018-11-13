@@ -18,7 +18,7 @@ class Product extends BasisModel {
     protected $table = 'tb_product';
 
     /* 关联的表 */
-    public function user() {
-        return $this->belongsTo('User');
+    public function users() {
+        return $this->belongsToMany('User', 'tb_user_product', 'user_id', 'product_id');
     }
 }

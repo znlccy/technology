@@ -18,8 +18,8 @@ class User extends BasisModel {
     protected $table = 'tb_user';
 
     /* 关联的表 */
-    public function product() {
-        return $this->hasOne('Product');
+    public function products() {
+        return $this->belongsToMany('Product', 'tb_user_product', 'product_id', 'user_id');
     }
 
     /* 关联的表 */

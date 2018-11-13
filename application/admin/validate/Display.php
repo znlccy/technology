@@ -13,6 +13,7 @@ class Display extends BasisValidate {
 
     /* 验证规则 */
     protected $rule = [
+        'id'            => '',
 
     ];
 

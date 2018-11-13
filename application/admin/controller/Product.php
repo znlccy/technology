@@ -12,6 +12,7 @@ namespace app\admin\controller;
 use app\admin\model\Product as ProductModel;
 use app\admin\response\Code;
 use app\admin\model\User as UserModel;
+use app\admin\model\UserProduct as UserProductModel;
 use app\admin\validate\Product as ProductValidate;
 use think\Request;
 
@@ -22,6 +23,9 @@ class Product extends BasisController {
 
     /* 声明合作者模型 */
     protected $user_model;
+
+    /* 用户产品模型 */
+    protected $user_product_model;
 
     /* 声明产品验证器 */
     protected $product_validate;
@@ -34,6 +38,7 @@ class Product extends BasisController {
         parent::__construct($request);
         $this->product_model = new ProductModel();
         $this->user_model = new UserModel();
+        $this->user_product_model = new UserProductModel();
         $this->product_validate = new ProductValidate();
         $this->product_page = config('pagination');
     }
@@ -191,25 +196,36 @@ class Product extends BasisController {
         $purpose = request()->param('purpose');
         $amount = request()->param('amount');
         $proposal = request()->file('proposal');
+        $type = request()->param('type');
         $picture = request()->file('picture');
         $recommend = request()->param('recommend',1);
         $status = request()->param('status',0);
 
         /* 移动文件 */
         if ($proposal) {
-            $info = $proposal->move(ROOT_PATH . 'public' . DS . 'files');
+            $config = [
+                'ext'       => 'rar,zip'
+            ];
+            $info = $proposal->validate($config)->move(ROOT_PATH . 'public' . DS . 'files');
             if ($info) {
                  $sub_path = str_replace('\\', '/', $info->getSaveName());
                  $proposal = '/files/' . $sub_path;
+            } else {
+                return $this->return_message(Code::INVALID, '上传附件格式不正确,只允许zip和rar格式');
             }
         }
 
         /* 移动图片 */
         if ($picture) {
-            $info = $picture->move(ROOT_PATH . 'public' . DS . 'images');
+            $config = [
+                'ext'       => 'png,jpg,jpeg,bmp'
+            ];
+            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
             if ($info) {
                 $sub_path = str_replace('\\', '/', $info->getSaveName());
                 $picture = '/images/' . $sub_path;
+            } else {
+                return $this->return_message(Code::INVALID, '上传图片格式不正确,只允许jpg、jpeg、png、bmp格式');
             }
         }
 
@@ -224,6 +240,7 @@ class Product extends BasisController {
             'purpose'   => $purpose,
             'amount'    => $amount,
             'proposal'  => $proposal,
+            'type'      => $type,
             'picture'   => $picture,
             'recommend' => $recommend,
             'status'    => $status
@@ -333,25 +350,28 @@ class Product extends BasisController {
         }
 
         /* 返回数据 */
-        $user = $this->user_model->where(['type' => '2', 'id' => $uid])->find();
+        $user_product = $this->user_product_model->where(['user_id' => $uid, 'product_id' => $pid])->find();
 
-        if ($user) {
+        if ($user_product) {
+            return $this->return_message(Code::AUTH, '该产品已经分配给该用户了');
+        } else {
+            $user = $this->user_model->where('id', $uid)->find();
+            if (is_null($user) || empty($user)) {
+                return $this->return_message(Code::FAILURE, '不存在该用户');
+            }
 
             $product = $this->product_model->where('id', $pid)->find();
-
-            if (empty($product)) {
-                return $this->return_message(Code::FAILURE, '产品不存在');
-            } else {
-                $allocation = $this->product_model->where('uid', '=',$uid)->find();
-                if ($allocation) {
-                    return $this->return_message(Code::FORBIDDEN, '产品已经分配了');
-                } else {
-                    $this->product_model->where('id', '=', $pid)->update(['uid' => $uid]);
-                    return $this->return_message(Code::SUCCESS, '产品分配成功');
-                }
+            if (is_null($product) || empty($product)) {
+                return $this->return_message(Code::FAILURE, '不存在该产品');
             }
-        } else {
-            return $this->return_message(Code::FAILURE, '不存在该用户');
+
+            $distribute = $product->users()->save($user);
+
+            if ($distribute) {
+                return $this->return_message(Code::SUCCESS, '分配成果成功');
+            } else {
+                return $this->return_message(Code::FAILURE, '分配成果失败');
+            }
         }
 
     }
@@ -401,5 +421,17 @@ class Product extends BasisController {
             }
         }
 
+    }
+
+    /* 用户下拉列表 */
+    public function user_listing() {
+        /* 返回数据 */
+        $user = $this->user_model->order('id', 'asc')->select();
+
+        if ($user) {
+            return $this->return_message(Code::SUCCESS, '获取用户下拉列表成功', $user);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取用户列表失败');
+        }
     }
 }
