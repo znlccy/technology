@@ -253,6 +253,9 @@ class Product extends BasisController {
 
         /* 返回结果 */
         if (empty($id)) {
+            if ($validate_data['status'] !== 0) {
+                $validate_data['status'] = 0;
+            }
             $product = $this->product_model->save($validate_data);
         } else {
             if (empty($proposal)) {
@@ -261,7 +264,12 @@ class Product extends BasisController {
             if (empty($picture)) {
                 unset($validate_data['picture']);
             }
-            $product = $this->product_model->save($validate_data, ['id' => $id]);
+            if ($validate_data['status'] !== 0) {
+                $validate_data['status'] = 0;
+            }
+            $validate_data['update_time'] = date('Y-m-d H:i:s',time());
+            $product = $this->product_model->where('id', $id)->update($validate_data);
+            /*$product = $this->product_model->save($validate_data, ['id' => $id]);*/
         }
 
         if ($product) {
