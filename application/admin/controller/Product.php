@@ -148,13 +148,16 @@ class Product extends BasisController {
         }
 
         if (is_null($status)) {
-            $conditions['status'] = ['in',[0,1]];
+            $conditions['status'] = ['in',[0,1,2]];
         } else {
             switch ($status) {
                 case 0:
                     $conditions['status'] = $status;
                     break;
                 case 1:
+                    $conditions['status'] = $status;
+                    break;
+                case 2:
                     $conditions['status'] = $status;
                     break;
                 default:
@@ -407,18 +410,18 @@ class Product extends BasisController {
             return $this->return_message(Code::FAILURE, '产品不存在');
         } else {
             /* 此处状态为2,3 */
-            if ($status == 1) {
+            if ($status == 0) {
                 return $this->return_message(Code::FORBIDDEN, '审核状态错误');
             } else {
                 $auditing = $this->product_model->where('id', '=', $id)->update(['status' => $status]);
 
                 if ($auditing) {
 
-                    if ($status == 2) {
-                        return $this->return_message(Code::SUCCESS, '审核成功');
+                    if ($status == 1) {
+                        return $this->return_message(Code::SUCCESS, '审核通过成功');
                     }
-                    if ($status == 3) {
-                        return $this->return_message(Code::FORBIDDEN, '审核失败');
+                    if ($status == 2) {
+                        return $this->return_message(Code::SUCCESS, '审核拒绝成功');
                     }
                 } else {
                     return $this->return_message(Code::FAILURE, '已经审核了');
