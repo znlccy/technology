@@ -135,10 +135,25 @@ class Crowdfunding extends BasisController {
         /* 接收参数 */
         $id = request()->param('id');
         $title = request()->param('title');
+        $picture = request()->file('picture');
         $current_amount = request()->param('current_amount');
         $target_amount = request()->param('target_amount');
         $status = request()->param('status', 0);
         $expired_time = request()->param('expired_time');
+
+        /* 移动图片 */
+        if ($picture) {
+            $config = [
+                'ext'   => 'jpg,jpeg,png,bmp'
+            ];
+            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $picture = '/images/' . $sub_path;
+            } else {
+                return $this->return_message(Code::INVALID, '上传图片格式不正确,只允许jpg,jpeg,png,bmp图片格式');
+            }
+        }
 
         /* 验证数据 */
         $validate_data = [
@@ -147,6 +162,7 @@ class Crowdfunding extends BasisController {
             'current_amount'=> $current_amount,
             'target_amount' => $target_amount,
             'status'        => $status,
+            'picture'       => $picture,
             'expired_time'  => $expired_time
         ];
 
@@ -161,6 +177,9 @@ class Crowdfunding extends BasisController {
         if (empty($id)) {
             $crowdfunding = $this->crowdfunding_model->save($validate_data);
         } else {
+            if (empty($validate_data['picture'])) {
+                unset($validate_data['picture']);
+            }
             $crowdfunding = $this->crowdfunding_model->save($validate_data, ['id' => $id]);
         }
 
