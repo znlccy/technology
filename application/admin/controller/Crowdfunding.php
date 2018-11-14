@@ -139,6 +139,7 @@ class Crowdfunding extends BasisController {
         $current_amount = request()->param('current_amount');
         $target_amount = request()->param('target_amount');
         $status = request()->param('status', 0);
+        $rich_text = request()->param('rich_text');
         $expired_time = request()->param('expired_time');
 
         /* 移动图片 */
@@ -163,6 +164,7 @@ class Crowdfunding extends BasisController {
             'target_amount' => $target_amount,
             'status'        => $status,
             'picture'       => $picture,
+            'rich_text'     => $rich_text,
             'expired_time'  => $expired_time
         ];
 

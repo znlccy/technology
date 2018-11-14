@@ -18,12 +18,12 @@ class Crowdfunding extends BasicModel {
     protected $table = 'tb_crowdfunding';
 
     /* 设置富文本 */
-    public function setRichText($value) {
+    public function setRichTextAttr($value) {
         return htmlspecialchars($value);
     }
 
     /* 获取富文本 */
-    public function getRichText($value) {
+    public function getRichTextAttr($value) {
         return htmlspecialchars_decode($value);
     }
 }
