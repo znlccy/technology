@@ -276,18 +276,18 @@ class Crowdfunding extends BasisController {
             return $this->return_message(Code::FAILURE, '不存在众筹');
         } else {
 
-            if ($status == 1) {
+            if ($status == 0) {
                 return $this->return_message(Code::FORBIDDEN, '审核状态错误');
             } else {
 
                 $auditing = $this->crowdfunding_model->where('id', '=', $id)->update(['status' => $status]);
 
                 if ($auditing) {
-                    if ($status == 2) {
-                        return $this->return_message(Code::SUCCESS, '审核成功');
+                    if ($status == 1) {
+                        return $this->return_message(Code::SUCCESS, '审核通过成功');
                     }
-                    if ($status == 3) {
-                        return $this->return_message(Code::FORBIDDEN, '审核失败');
+                    if ($status == 2) {
+                        return $this->return_message(Code::FORBIDDEN, '审核拒绝成功');
                     }
                 } else {
                     return $this->return_message(Code::FAILURE, '已经审核了');
