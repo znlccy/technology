@@ -11,9 +11,6 @@ namespace app\index\model;
 
 class UserProduct extends BasicModel {
 
-    /* 读存时间 */
-    protected $autoWriteTimestamp = 'datetime';
-
     /* 对应的表 */
     protected $table = 'tb_user_product';
 }

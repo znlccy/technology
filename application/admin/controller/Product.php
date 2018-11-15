@@ -362,7 +362,7 @@ class Product extends BasisController {
         $user_product = $this->user_product_model->where(['user_id' => $uid, 'product_id' => $pid])->find();
 
         if ($user_product) {
-            return $this->return_message(Code::AUTH, '该产品已经分配给该用户了');
+            return $this->return_message(Code::INVALID, '该产品已经分配给该用户了');
         } else {
             $user = $this->user_model->where('id', $uid)->find();
             if (is_null($user) || empty($user)) {
@@ -374,12 +374,12 @@ class Product extends BasisController {
                 return $this->return_message(Code::FAILURE, '不存在该产品');
             }
 
-            $distribute = $product->users()->save($user);
+            $distribute = $this->user_product_model->save(['user_id' => $uid, 'product_id' => $pid]);
 
             if ($distribute) {
-                return $this->return_message(Code::SUCCESS, '分配成果成功');
+                return $this->return_message(Code::SUCCESS, '分配产品成功');
             } else {
-                return $this->return_message(Code::FAILURE, '分配成果失败');
+                return $this->return_message(Code::FAILURE, '分配产品失败');
             }
         }
     }
