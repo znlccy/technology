@@ -2,11 +2,10 @@
 /**
  * Created by PhpStorm.
  * User: Administrator
- * Date: 2018/9/6
- * Time: 11:33
+ * Date: 2018/8/15
+ * Time: 14:22
  * Comment: 用户控制器
  */
-
 namespace app\index\controller;
 
 use app\index\model\User as UserModel;
@@ -18,6 +17,7 @@ use app\index\model\UserProduct as UserProduceModel;
 use app\index\model\Crowdfunding as CrowdfundingModel;
 use app\index\model\Information as InformationModel;
 use app\index\model\Purchase as PurchaseModel;
+use app\index\model\Logistics as LogisticsModel;
 use app\index\model\Order as OrderModel;
 use app\index\response\Code;
 use app\index\validate\User as UserValidate;
@@ -54,6 +54,9 @@ class User extends BasicController {
     /* 声明通知消息模型 */
     protected $information_model;
 
+    /* 声明物流模型 */
+    protected $logistics_model;
+
     /* 声明订单模型 */
     protected $order_model;
 
@@ -73,6 +76,7 @@ class User extends BasicController {
         $this->user_crowd_model = new UserCrowdModel();
         $this->user_product_model = new UserProduceModel();
         $this->crowd_funding_model = new CrowdfundingModel();
+        $this->logistics_model = new LogisticsModel();
         $this->information_model = new InformationModel();
         $this->purchase_model = new PurchaseModel();
         $this->order_model = new OrderModel();
@@ -83,8 +87,8 @@ class User extends BasicController {
     /**
      * 用户登录api接口
      */
-    public function login()
-    {
+    public function login() {
+
         //接收客户端提交的数据
         $mobile = request()->param('mobile');
         $password = request()->param('password');
@@ -92,13 +96,13 @@ class User extends BasicController {
 
         /* 验证规则 */
         $validate_data = [
-            'mobile' => $mobile,
-            'password' => $password,
-            'verify' => $verify,
+            'mobile'        => $mobile,
+            'password'      => $password,
+            'verify'        => $verify,
         ];
 
         //实例化验证器
-        $result = $this->user_validate->scene('login')->check($validate_data);
+        $result   = $this->user_validate->scene('login')->check($validate_data);
 
         if (!$result) {
             return json(['code' => '401', 'message' => $this->user_validate->getError()]);
@@ -109,13 +113,12 @@ class User extends BasicController {
             ->find();
 
         $data = [
-            'login_time' => date("Y-m-d H:s:i", time()),
-            'login_ip' => request()->ip()
+            'login_time'        => date("Y-m-d H:s:i", time())
         ];
 
         $this->user_model->save($data, ['id' => $user['id']]);
 
-        if (empty($user)) {
+        if (empty($user) ) {
             return json(['code' => '404', 'message' => '数据库中还没有该用户或者输入的账号密码错误']);
         }
 
@@ -123,7 +126,7 @@ class User extends BasicController {
         $token = general_token($mobile, $password);
         Session::set('access_token', $token);
 
-        return json(['code' => '200', 'message' => '登录成功', 'access_token' => $token, 'mobile' => $mobile]);
+        return json(['code' => '200', 'message'   => '登录成功',  'access_token' => $token, 'mobile' => $mobile]);
     }
 
     /**
@@ -131,18 +134,18 @@ class User extends BasicController {
      */
     public function register() {
         /* 获取客户端提交过来的数据 */
+        $type = request()->param('type');
         $mobile = request()->param('mobile');
         $password = request()->param('password');
-        $type = request()->param('type');
         $verify = request()->param('verify');
         $code = request()->param('code');
 
         /* 验证规则 */
         $validate_data = [
+            'type'          => $type,
             'mobile'        => $mobile,
             'password'      => $password,
             'verify'        => $verify,
-            'type'          => $type,
             'code'          => $code,
         ];
 
@@ -170,7 +173,9 @@ class User extends BasicController {
         $user_data = [
             'mobile'        => $mobile,
             'password'      => md5($password),
-            'register_time' => date('Y-m-d H:i:s', time())
+            'type'          => $type,
+            'create_time' =>date('Y-m-d H:i:s', time()),
+            'update_time' =>date('Y-m-d H:i:s', time()),
         ];
 
         $register_result =$this->user_model->insertGetId($user_data);
@@ -308,22 +313,16 @@ class User extends BasicController {
      * 个人信息api接口
      */
     public function info() {
+
         // 用户手机号
-        $mobile = session('user.mobile');
+        $mobile = Session::get('user.mobile');
 
         //实例化模型
         $personal = $this->user_model->where('mobile', '=', $mobile)->find();
         if ($personal) {
-            return json([
-                'code'      => '200',
-                'message'   => '查找成功',
-                'data'      => $personal
-            ]);
+            return $this->return_message(Code::SUCCESS, '获取个人信息成功', $personal);
         } else {
-            return json([
-                'code'      => '404',
-                'message'   => '该手机号未注册'
-            ]);
+            return $this->return_message(Code::FAILURE, '该手机号未注册');
         }
     }
 
@@ -336,7 +335,7 @@ class User extends BasicController {
         $mobile = Session::get('user.mobile');
         $username = request()->param('username');
         $email = request()->param('email');
-        $enterprise = request()->param('enterprise');
+        $company = request()->param('company');
         $industry = request()->param('industry');
         $duty = request()->param('duty');
 
@@ -345,7 +344,7 @@ class User extends BasicController {
             'mobile'        => $mobile,
             'username'      => $username,
             'email'         => $email,
-            'enterprise'    => $enterprise,
+            'company'       => $company,
             'industry'      => $industry,
             'duty'          => $duty,
         ];
@@ -353,7 +352,7 @@ class User extends BasicController {
         //实例化验证器
         $result   = $this->user_validate->scene('modify_info')->check($validate_data);
         if (!$result) {
-            return json(['code' => '401', 'message' => $this->user_validate->getError()]);
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
         /* 更新数据 */
@@ -361,9 +360,9 @@ class User extends BasicController {
 
         /* 返回数据 */
         if ($result) {
-            return json(['code' => '200', 'message' => '保存成功']);
+            return $this->return_message(Code::SUCCESS, '保存成功');
         } else {
-            return json(['code' => '402', 'message' => '保存失败，数据库中还没有该用户信息']);
+            return $this->return_message(Code::FAILURE, '保存失败，数据库中还没有该用户信息');
         }
     }
 
@@ -409,15 +408,9 @@ class User extends BasicController {
 
         $result =$this->user_model->where('id', '=', $user_id)->update($data);
         if ($result) {
-            return json([
-                'code'      => '200',
-                'message'   => '更新成功'
-            ]);
+            return $this->return_message(Code::SUCCESS, '更新成功');
         } else {
-            return json([
-                'code'      => '403',
-                'message'   => '更新失败'
-            ]);
+            return $this->return_message(Code::FAILURE, '更新失败');
         }
     }
 
@@ -517,6 +510,29 @@ class User extends BasicController {
         }
 
         return $this->return_message(Code::SUCCESS, '查询信息成功', $information);
+    }
+
+    /**
+     * 登出api接口
+     */
+    public function logout(){
+        if (Session::has('user') && Session::has('access_token')) {
+            //删除Session中的数据
+            Session::delete('user');
+            Session::delete('access_token');
+            return $this->return_message(Code::SUCCESS, '登出成功');
+        } else {
+            return $this->return_message(Code::INVALID,'您还没登录过');
+        }
+    }
+
+    /**
+     * 验证token
+     * @param $mobile
+     */
+    protected function token($mobile) {
+        $now = date('Y-m-d', time());
+        $expired = date('Y-m-d', strtotime("+1 day",strtotime(time())));
     }
 
     /**
@@ -769,6 +785,160 @@ class User extends BasicController {
         }
     }
 
+    /* 购买名单 */
+    public function purchase_list() {
+
+        /* 接收参数 */
+        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
+
+        /* 验证参数 */
+        $validate_data = [
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('purchase_list')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $purchase = $this->purchase_model
+            ->alias('pm')
+            ->join('tb_product tp', 'tp.id = pm.product_id')
+            ->join('tb_user tu', 'tu.id = pm.user_id')
+            ->join('tb_logistics tl', 'tl.id = pm.logistics_id')
+            ->field('tu.mobile, pm.id, pm.order_id, pm.charge_time, pm.charge_amount, pm.status, tp.title, tl.name')
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($purchase) {
+            return $this->return_message(Code::SUCCESS, '获取购买明细列表成功', $purchase);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取购买明细列表失败');
+        }
+
+    }
+
+    /* 购买详情 */
+    public function purchase_detail() {
+
+        /* 接收参数 */
+        $id = request()->param('id');
+
+        /* 验证参数 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('purchase_detail')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $purchase = $this->purchase_model
+            ->alias('pm')
+            ->where('pm.id', $id)
+            ->join('tb_logistics tl', 'tl.id = pm.logistics_id')
+            ->join('tb_user tu', 'tu.id = pm.user_id')
+            ->field('pm.order_id, pm.charge_time, pm.charge_amount, pm.status, tu.mobile, tl.name')
+            ->find();
+
+        if ($purchase) {
+            return $this->return_message(Code::SUCCESS, '获取购买详情成功', $purchase);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取购买详情失败');
+        }
+    }
+
+    /* 产品发货 */
+    public function deliver() {
+
+        /* 接收参数 */
+        $product_id = request()->param('product_id');
+        $logistics_id = request()->param('logistics_id');
+        $order_id = request()->param('order_id');
+
+        /* 验证参数 */
+        $validate_data = [
+            'product_id'    => $product_id,
+            'logistics_id'  => $logistics_id
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('deliver')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+
+    }
+
+    /* 物流下拉列表框 */
+    public function logistics() {
+
+        /* 返回物流 */
+        $logistics = $this->logistics_model->select();
+
+        if ($logistics) {
+            return $this->return_message(Code::SUCCESS, '获取物流列表成功');
+        } else {
+            return $this->return_message(Code::FAILURE, '获取物流列表失败');
+        }
+    }
+
+    /* 批量下载 */
+    public function dump_excel() {
+        //查询数据
+        $where['member_card'] = 123456;
+        $xlsData = $this->user_model->select();
+        //构建excel
+        $xlsName  = "购买明单";
+        $xlsCell  = array(
+            array('id','用户ID',20),
+            array('status','购买时间',45),
+            array('username','购买金额',35),
+            array('mobile','状态',25),
+        );
+        $this->exportExcel($xlsName,$xlsCell,$xlsData);
+    }
+
+
+    private function exportExcel($expTitle,$expCellName,$expTableData){
+        $xlsTitle = iconv('utf-8', 'gb2312', $expTitle);//文件名称
+        $fileName = $expTitle.date('_Ymd_His');//or $xlsTitle 文件名称可根据自己情况设定
+        $cellNum = count($expCellName);
+        $dataNum = count($expTableData);
+        vendor("PHPExcel.PHPExcel");
+        $objPHPExcel = new \PHPExcel();
+        $cellName = array('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ');
+        // $objPHPExcel->getActiveSheet(0)->mergeCells('A1:'.$cellName[$cellNum-1].'1');//合并单元格
+        // $objPHPExcel->setActiveSheetIndex(0)->setCellValue('A1', $expTitle.'  Export time:'.date('Y-m-d H:i:s'));//第一行标题
+        for($i=0;$i<$cellNum;$i++){
+            $objPHPExcel->setActiveSheetIndex(0)->setCellValue($cellName[$i].'1', $expCellName[$i][1]);
+            $objPHPExcel->getActiveSheet()->getColumnDimension($cellName[$i])->setWidth($expCellName[$i][2]); //设置宽度
+        }
+        // Miscellaneous glyphs, UTF-8
+        for($i=0;$i<$dataNum;$i++){
+            for($j=0;$j<$cellNum;$j++){
+                $objPHPExcel->getActiveSheet(0)->setCellValue($cellName[$j].($i+2), $expTableData[$i][$expCellName[$j][0]]);
+            }
+        }
+        ob_end_clean();
+        header('Content-Type: application/octet-stream');
+        header("Content-Disposition:attachment;filename=$fileName.xls");//attachment新窗口打印inline本窗口
+        $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+        $objWriter->save('php://output');
+        exit;
+    }
+
+
     /* 合作的产品 */
     public function cooperate_product() {
 
@@ -1007,31 +1177,48 @@ class User extends BasicController {
         }
     }
 
-    /* 购买详情 */
-    public function purchase_detail() {
+    /* 合作产品列表 */
+    public function cooperate_listing() {
+        $user_id = session('user.id');
+
+        if (is_null($user_id) || empty($user_id)) {
+            return $this->return_message(Code::FAILURE, '用户还没登录');
+        }
+
+        $user = $this->user_model->where('id', $user_id)->find();
+
+        if (empty($user)) {
+            return $this->return_message(Code::FAILURE, '不存在该用户');
+        }
 
         /* 接收参数 */
-        $order_id = request()->param('order_id');
+        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
 
         /* 验证参数 */
         $validate_data = [
-            'order_id'        => $order_id
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
         ];
 
         /* 验证结果 */
-        $result = $this->user_validate->scene('purchase_detail')->check($validate_data);
+        $result = $this->user_validate->scene('product_listing')->check($validate_data);
 
         if (true !== $result) {
             return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
-        /* 返回结果 */
-        $purchase = $this->order_model->where('order_id', $order_id)->find();
+        $product = $this->user_product_model
+            ->alias('upm')
+            ->where('upm.user_id', '=', $user_id)
+            ->join('tb_product tp', 'upm.product_id = tp.id')
+            ->paginate($page_size, false, ['page' => $jump_page]);
 
-        if ($purchase) {
-            return $this->return_message(Code::SUCCESS, '购买详情成功',$purchase);
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '获取用户合作的成果列表成功',$product);
         } else {
-            return $this->return_message(Code::FAILURE, '购买详情失败');
+            return $this->return_message(Code::FAILURE, '获取用户合作的成果列表失败');
         }
     }
+
 }

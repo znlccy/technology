@@ -9,7 +9,7 @@
 
 namespace app\index\controller;
 
-class Charge extends BasicController {
+class Purchase extends BasicController {
 
     public function pay()
     {
@@ -101,7 +101,7 @@ class Charge extends BasicController {
                     'charge_type' => $charge_type,
                     'status' => 0
                 ];
-                $result = $this->validate($data, 'Charge');
+                $result = $this->validate($data, 'Purchase');
                 if (true != $result) {
                     return json(['code' => 401, 'message' => $result]);
                 }
@@ -127,9 +127,6 @@ class Charge extends BasicController {
             }
         }
     }
-
-
-
 
     /**
      * 查询charge 对象

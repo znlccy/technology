@@ -26,7 +26,8 @@
         "topthink/think-oracle": "1.*",
         "gmars/tp5-nestedsets": "dev-master",
         "gmars/tp5-rbac": "dev-master",
-        "pingplusplus/pingpp-php": "2.4.*"
+        "pingplusplus/pingpp-php": "2.4.*",
+        "phpoffice/phpexcel": "1.8.*"
     },
     "autoload": {
         "psr-4": {
