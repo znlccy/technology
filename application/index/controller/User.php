@@ -968,42 +968,105 @@ class User extends BasicController {
         exit;
     }
 
-
     /* 合作的产品 */
-    public function cooperate_product() {
+    public function cooperate_listing() {
+        $user_id = session('user.id');
 
-        /* 接收参数 */
-        $uid = Session::get('user.id');
-
-        if (is_null($uid) || empty($uid)) {
-            return $this->return_message(Code::INVALID,'该用户还没有登录');
+        if (is_null($user_id) || empty($user_id)) {
+            return $this->return_message(Code::FAILURE, '用户还没登录');
         }
 
-        $page_size = request()->param('page_size',$this->user_page['PAGE_SIZE']);
-        $jump_page = request()->param('jump_page',$this->user_page['JUMP_PAGE']);
+        $user = $this->user_model->where('id', $user_id)->find();
 
-        /* 验证数据 */
+        if (empty($user)) {
+            return $this->return_message(Code::FAILURE, '不存在该用户');
+        }
+
+        /* 接收参数 */
+        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
+
+        /* 验证参数 */
         $validate_data = [
             'page_size'     => $page_size,
             'jump_page'     => $jump_page
         ];
 
         /* 验证结果 */
-        $result = $this->user_validate->scene('cooperate_product')->check($validate_data);
+        $result = $this->user_validate->scene('product_listing')->check($validate_data);
+
         if (true !== $result) {
             return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
         $product = $this->user_product_model
-            ->alias('up')
-            ->where('up.user_id', $uid)
-            ->join('tb_product tp','tp.id = up.product_id')
+            ->alias('upm')
+            ->where('upm.user_id', '=', $user_id)
+            ->join('tb_product tp', 'upm.product_id = tp.id')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($product) {
-            return $this->return_message(Code::SUCCESS, '获取合作产品成功', $product);
+            return $this->return_message(Code::SUCCESS, '获取用户合作的成果列表成功',$product);
         } else {
-            return $this->return_message(Code::FAILURE, '获取合作产品失败');
+            return $this->return_message(Code::FAILURE, '获取用户合作的成果列表失败');
+        }
+    }
+
+    /* 合作产品详情 */
+    public function cooperate_product_detail() {
+
+        /* 接受参数 */
+        $id = request()->param('id');
+
+        /* 验证参数 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('cooperate_product_detail')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model->where('id', $id)->find();
+
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '获取合作产品详情成功', $product);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取合作产品详情失败');
+        }
+
+    }
+
+    /* 合作产品删除 */
+    public function cooperate_product_delete() {
+
+        $user_id = session('user.id');
+
+        /* 接收参数 */
+        $id  = request()->param('id');
+
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 返回结果 */
+        $result = $this->user_validate->scene('cooperate_product_delete')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model->where(['user_id' => $user_id, 'id' => $id])->delete();
+
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '删除合作产品成功');
+        } else {
+            return $this->return_message(Code::FAILURE, '删除合作产品失败');
         }
     }
 
@@ -1106,6 +1169,7 @@ class User extends BasicController {
         $purpose = request()->param('purpose');
         $amount = request()->param('amount');
         $proposal = request()->file('proposal');
+
         /* 移动的项目计划书 */
         if ($proposal) {
             $config = [
@@ -1117,19 +1181,6 @@ class User extends BasicController {
                 $proposal = '/images/' . $sub_path;
             } else {
                 return $this->return_message(Code::INVALID,'上传图片格式不对，只允许zip,rar格式');
-            }
-        }
-        $picture = request()->file('picture');
-        if ($picture) {
-            $config = [
-                'ext'       => 'jpg,jpeg,png,bmp'
-            ];
-            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
-            if ($info) {
-                $sub_path = str_replace('\\', '/', $info->getSaveName());
-                $picture = '/images/' . $sub_path;
-            } else {
-                return $this->return_message(Code::INVALID, '上传图片格式不对，只允许jpg,jpeg,png,bmp格式');
             }
         }
         $recommend = request()->param('recommend', 1);
@@ -1148,7 +1199,6 @@ class User extends BasicController {
             'recommend' => $recommend,
             'status'    => $status,
             'proposal'  => $proposal,
-            'picture'   => $picture
         ];
 
         /* 验证结果 */
@@ -1171,7 +1221,7 @@ class User extends BasicController {
     public function recharge_record() {
 
         /* 接收参数 */
-        $uid = \session('user.id');
+        $uid = session('user.id');
 
         if (is_null($uid) || empty($uid)) {
             return $this->return_message(Code::INVALID, '该用户还没有登录');
@@ -1198,6 +1248,8 @@ class User extends BasicController {
             ->alias('pm')
             ->where('pm.user_id', $uid)
             ->join('tb_order to', 'to.order_id = pm.order_id')
+            ->join('tb_product tp', 'tp.id = pm.product_id')
+            ->field('pm.id, pm.charge_time, pm.charge_amount, pm.order_id, to.pay_method, to.status, to.create_time')
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($recharge) {
