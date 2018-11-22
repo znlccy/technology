@@ -476,7 +476,6 @@ class User extends BasicController {
         // 用户手机号
         $user_id = session('user.id');
 
-
         /* 验证规则 */
         $validate_data = [
             'id'        => $id,
@@ -775,7 +774,7 @@ class User extends BasicController {
         $crowdfund_instance = $this->crowd_funding_model->where('id',$crowd_id)->find();
 
         foreach ($products as $key => $product) {
-            $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key]]);
+            $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
         }
 
         if ($product_result) {
@@ -846,7 +845,8 @@ class User extends BasicController {
             ->where('pm.id', $id)
             ->join('tb_logistics tl', 'tl.id = pm.logistics_id')
             ->join('tb_user tu', 'tu.id = pm.user_id')
-            ->field('pm.order_id, pm.charge_time, pm.charge_amount, pm.status, tu.mobile, tl.name')
+            ->join('tb_product tp', 'tp.id = pm.product_id')
+            ->field('pm.order_id, pm.charge_time, pm.charge_amount, pm.status, tu.mobile, tl.name, tp.title')
             ->find();
 
         if ($purchase) {
@@ -860,13 +860,12 @@ class User extends BasicController {
     public function deliver() {
 
         /* 接收参数 */
-        $product_id = request()->param('product_id');
+        $id = request()->param('id');
         $logistics_id = request()->param('logistics_id');
-        $order_id = request()->param('order_id');
 
         /* 验证参数 */
         $validate_data = [
-            'product_id'    => $product_id,
+            'id'            => $id,
             'logistics_id'  => $logistics_id
         ];
 
@@ -877,6 +876,26 @@ class User extends BasicController {
             return $this->return_message(Code::INVALID, $this->user_validate->getError());
         }
 
+        /* 返回结果 */
+        $purchase = $this->purchase_model->where('id', $id)->find();
+        $logistics = $this->logistics_model->where('id', $logistics_id)->find();
+
+        $deliver = ['order_id' => $purchase['order_id'], 'logistic' => $logistics['name']];
+
+        if ($purchase['status'] == 0) {
+            $update_data = [
+                'status'    => 1
+            ];
+            $deliver_result = $this->purchase_model->save($update_data, ['id' => $id]);
+        } else {
+            return $this->return_message(Code::SUCCESS, '该商品已经配送了',$deliver);
+        }
+
+        if ($deliver_result) {
+            return $this->return_message(Code::SUCCESS, '发货成功', $deliver);
+        } else {
+            return $this->return_message(Code::FAILURE, '发货失败');
+        }
 
     }
 
@@ -887,7 +906,7 @@ class User extends BasicController {
         $logistics = $this->logistics_model->select();
 
         if ($logistics) {
-            return $this->return_message(Code::SUCCESS, '获取物流列表成功');
+            return $this->return_message(Code::SUCCESS, '获取物流列表成功', $logistics);
         } else {
             return $this->return_message(Code::FAILURE, '获取物流列表失败');
         }
@@ -896,20 +915,31 @@ class User extends BasicController {
     /* 批量下载 */
     public function dump_excel() {
         //查询数据
-        $where['member_card'] = 123456;
-        $xlsData = $this->user_model->select();
+        $xlsData = $this->purchase_model
+            ->alias('pm')
+            ->join('tb_product tp', 'tp.id = pm.product_id')
+            ->join('tb_user tu', 'tu.id = pm.user_id')
+            ->join('tb_logistics tl', 'tl.id = pm.logistics_id')
+            ->field('tu.mobile as mobile, pm.id as id, pm.order_id as order_id, pm.charge_time as charge_time, pm.charge_amount as charge_amount, pm.status as status, tp.title as title, tl.name as name')
+            ->select();
+
         //构建excel
         $xlsName  = "购买明单";
         $xlsCell  = array(
-            array('id','用户ID',20),
-            array('status','购买时间',45),
-            array('username','购买金额',35),
-            array('mobile','状态',25),
+            array('id', '购买主键', 15),
+            array('mobile','用户ID',15),
+            array('order_id', '订单编号', 35),
+            array('charge_time', '购买时间', 45),
+            array('charge_amount', '购买金额', 12),
+            array('status','发货状态',15),
+            array('title','商品名称',20),
+            array('name','物流名称',20),
         );
         $this->exportExcel($xlsName,$xlsCell,$xlsData);
+        return $this->return_message(Code::SUCCESS, '导出数据成功');
     }
 
-
+    /* 导出Excel数据 */
     private function exportExcel($expTitle,$expCellName,$expTableData){
         $xlsTitle = iconv('utf-8', 'gb2312', $expTitle);//文件名称
         $fileName = $expTitle.date('_Ymd_His');//or $xlsTitle 文件名称可根据自己情况设定
@@ -1176,49 +1206,4 @@ class User extends BasicController {
             return $this->return_message(Code::FAILURE, '获取用户支付记录失败');
         }
     }
-
-    /* 合作产品列表 */
-    public function cooperate_listing() {
-        $user_id = session('user.id');
-
-        if (is_null($user_id) || empty($user_id)) {
-            return $this->return_message(Code::FAILURE, '用户还没登录');
-        }
-
-        $user = $this->user_model->where('id', $user_id)->find();
-
-        if (empty($user)) {
-            return $this->return_message(Code::FAILURE, '不存在该用户');
-        }
-
-        /* 接收参数 */
-        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
-        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
-
-        /* 验证参数 */
-        $validate_data = [
-            'page_size'     => $page_size,
-            'jump_page'     => $jump_page
-        ];
-
-        /* 验证结果 */
-        $result = $this->user_validate->scene('product_listing')->check($validate_data);
-
-        if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->user_validate->getError());
-        }
-
-        $product = $this->user_product_model
-            ->alias('upm')
-            ->where('upm.user_id', '=', $user_id)
-            ->join('tb_product tp', 'upm.product_id = tp.id')
-            ->paginate($page_size, false, ['page' => $jump_page]);
-
-        if ($product) {
-            return $this->return_message(Code::SUCCESS, '获取用户合作的成果列表成功',$product);
-        } else {
-            return $this->return_message(Code::FAILURE, '获取用户合作的成果列表失败');
-        }
-    }
-
 }
