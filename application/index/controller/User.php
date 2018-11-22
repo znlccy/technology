@@ -22,11 +22,10 @@ use app\index\model\Order as OrderModel;
 use app\index\response\Code;
 use app\index\validate\User as UserValidate;
 use think\Config;
-use think\Controller;
 use think\Request;
 use think\Session;
 
-class User extends Controller {
+class User extends BasicController {
 
     /* 声明用户模型 */
     protected $user_model;
@@ -710,11 +709,11 @@ class User extends Controller {
     public function create_crowdfunding() {
 
         /* 接收参数 */
-        /*$uid = session('user.id');
+        $uid = session('user.id');
 
         if (is_null($uid) || empty($uid)) {
             return $this->return_message(Code::INVALID, '用户还没有登录');
-        }*/
+        }
         $title = request()->param('title');
         $target_amount = request()->param('target_amount');
         $expired_time = request()->param('expired_time');
@@ -737,7 +736,7 @@ class User extends Controller {
                 $picture_path[$key] = $picture;
             }else{
                 // 上传失败获取错误信息
-                echo $picture->getError();
+                return $this->return_message(Code::INVALID, '上传图片格式不对，只允许jpg,jpeg,png格式');
             }
         }
 

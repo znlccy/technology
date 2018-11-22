@@ -434,7 +434,9 @@ class Product extends BasisController {
     /* 用户下拉列表 */
     public function user_listing() {
         /* 返回数据 */
-        $user = $this->user_model->order('id', 'asc')->select();
+        $user = $this->user_model
+            ->where('type', '=', '2')
+            ->order('id', 'asc')->select();
 
         if ($user) {
             return $this->return_message(Code::SUCCESS, '获取用户下拉列表成功', $user);
