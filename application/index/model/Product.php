@@ -16,4 +16,9 @@ class Product extends BasicModel {
 
     /* 对应的表 */
     protected $table = 'tb_product';
+
+    /* 关联的表 */
+    public function Crowdfunding() {
+        return $this->belongsTo('Crowdfunding', 'crowd_id', 'id');
+    }
 }

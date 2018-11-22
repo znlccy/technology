@@ -23,6 +23,7 @@ class BasicController extends Controller {
     // 当前操作名称
     protected $action;
     // 无需验证方法
+
     protected  $except_auth = [
         'User' => ['login', 'register', 'recover_pass', 'change_pass'],
         'Display' => ['listing', 'detail'],
@@ -30,7 +31,7 @@ class BasicController extends Controller {
         'Index' => ['index'],
         'Verify' => ['attain'],
         'Sms' => ['attain'],
-        'Image' => ['upload']
+        'Image' => ['upload'],
     ];
 
     public function __construct(Request $request = null)

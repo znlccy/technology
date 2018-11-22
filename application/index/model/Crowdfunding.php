@@ -17,6 +17,11 @@ class Crowdfunding extends BasicModel {
     /* 对应的表 */
     protected $table = 'tb_crowdfunding';
 
+    /* 关联的表 */
+    public function Product() {
+        return $this->hasMany('Product', 'crowd_id', 'id');
+    }
+
     /* 设置富文本 */
     public function setRichTextAttr($value) {
         return htmlspecialchars($value);

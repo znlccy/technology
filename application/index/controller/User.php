@@ -22,10 +22,11 @@ use app\index\model\Order as OrderModel;
 use app\index\response\Code;
 use app\index\validate\User as UserValidate;
 use think\Config;
+use think\Controller;
 use think\Request;
 use think\Session;
 
-class User extends BasicController {
+class User extends Controller {
 
     /* 声明用户模型 */
     protected $user_model;
@@ -85,7 +86,6 @@ class User extends BasicController {
      */
     public function login()
     {
-
         //接收客户端提交的数据
         $mobile = request()->param('mobile');
         $password = request()->param('password');
@@ -425,7 +425,7 @@ class User extends BasicController {
     /**
      * 通知消息api接口
      */
-    public function information() {
+    public function notification() {
 
         /* 获取客户端提供的 */
         $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
@@ -474,41 +474,270 @@ class User extends BasicController {
         ]);
     }
 
+    /**
+     * 通知信息详情api接口
+     */
+    public function notification_detail() {
+
+        /* 获取客户端提供的数据 */
+        $id = request()->param('id');
+        // 用户手机号
+        $user_id = session('user.id');
+
+
+        /* 验证规则 */
+        $validate_data = [
+            'id'        => $id,
+        ];
+
+        //验证结果
+        $result   = $this->user_validate->scene('notification_detail')->check($validate_data);
+        if (!$result) {
+            return json(['code' => '401', 'message' => $this->user_validate->getError()]);
+        }
+
+        $information = $this->information_model->alias('in')
+            ->where('in.id', '=', $id)
+            ->join('tb_admin a', 'in.publisher = a.id')
+            ->field('in.id, in.title, in.publish_time, in.rich_text, a.nick_name as publisher')
+            ->find();
+
+        if ( empty($information) ){
+            return json([
+                'code'      => '404',
+                'message'   => '消息不存在',
+            ]);
+        }
+
+        $data = $this->user_info_model->where('user_id', '=', $user_id)
+            ->where('info_id', '=', $id)
+            ->find();
+
+        if ( empty($data) ){
+            $this->user_info_model->insert(['user_id' => $user_id, 'info_id' => $id, 'status' => 1]);
+        }
+
+        return $this->return_message(Code::SUCCESS, '查询信息成功', $information);
+    }
+
+    /**
+     * 用户保存个人资料
+     * @return \think\response\Json
+     */
+    public function save() {
+        /* 接收参数 */
+        $id = request()->param('id');
+        $type = intval(request()->param('type'));
+        $status = request()->param('status');
+        $username = request()->param('username');
+        $mobile = request()->param('mobile');
+        $duty = request()->param('duty');
+        $department = request()->param('department');
+        $phone = request()->param('phone');
+        $wechat = request()->param('wechat');
+        $email = request()->param('email');
+        $link = request()->param('link');
+
+        switch ($type) {
+            case 1:
+                $enterprise = request()->param('enterprise');
+                $introduce = request()->param('introduce');
+                $industry = request()->param('industry');
+                $capital = request()->param('capital');
+                $revenue = request()->param('revenue');
+                $assets = request()->param('assets');
+                $address = request()->param('address');
+
+                $validate_entrepreneur = [
+                    'id'            => $id,
+                    'type'          => $type,
+                    'status'        => $status,
+                    'enterprise'    => $enterprise,
+                    'introduce'     => $introduce,
+                    'industry'      => $industry,
+                    'capital'       => $capital,
+                    'revenue'       => $revenue,
+                    'assets'        => $assets,
+                    'address'       => $address,
+                    'username'      => $username,
+                    'mobile'        => $mobile,
+                    'duty'          => $duty,
+                    'department'    => $department,
+                    'phone'         => $phone,
+                    'wechat'        => $wechat,
+                    'email'         => $email,
+                    'link'          => $link
+                ];
+
+                /* 验证规则 */
+                $validate_entrepreneur_rule = [
+                    'id'            => 'number',
+                    'type'          => 'require|number|in:1,2',
+                    'status'        => 'require|number|in:0,1',
+                    'enterprise'    => 'require|max:255',
+                    'introduce'     => 'require|max:500',
+                    'industry'      => 'require|max:255',
+                    'capital'       => 'require|number',
+                    'revenue'       => 'require|number|in:0,1',
+                    'assets'        => 'require|number',
+                    'username'      => 'require|max:120',
+                    'mobile'        => 'require|max:32|unique:tb_user',
+                    'duty'          => 'require|max:255',
+                    'department'    => 'require|max:300',
+                    'phone'         => 'require|max:60',
+                    'wechat'        => 'require|max:60',
+                    'email'         => 'require|email',
+                    'link'          => 'require|max:800',
+                ];
+
+                /* 验证结果 */
+                $result = $this->user_validate->check($validate_entrepreneur, $validate_entrepreneur_rule);
+
+                if (true != $result) {
+                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                }
+
+                /* 返回结果 */
+                if (empty($id)) {
+                    if ($validate_entrepreneur['status'] !== 0) {
+                        $validate_entrepreneur['status'] = 0;
+                    }
+                    $entrepreneur = $this->user_model->save($validate_entrepreneur);
+                } else {
+
+                    if ($validate_entrepreneur['status'] !== 0) {
+                        $validate_entrepreneur['status'] = 0;
+                    }
+                    $validate_entrepreneur['update_time'] = date('Y-m-d H:i:s', time());
+                    $entrepreneur = $this->user_model->where('id', $id)->update($validate_entrepreneur);
+                }
+
+                if ($entrepreneur) {
+                    return $this->return_message(Code::SUCCESS, '创业者数据操作成功');
+                } else {
+                    return $this->return_message(Code::FAILURE, '创业者数据操作失败');
+                }
+                break;
+            case 2:
+                /* 接收参数 */
+                $company = request()->param('company');
+                $capital_body = request()->param('capital_body');
+                $location = request()->param('location');
+                $invest_industry = request()->param('invest_industry');
+                $invest_address = request()->param('invest_address');
+                $invest_amount = request()->param('invest_amount');
+                $text_domain = request()->param('text_domain');
+
+                /* 验证参数 */
+                $validate_collaborator = [
+                    'id'            => $id,
+                    'type'          => $type,
+                    'status'        => $status,
+                    'company'       => $company,
+                    'location'      => $location,
+                    'capital_body'  => $capital_body,
+                    'invest_industry'=> $invest_industry,
+                    'invest_address'=> $invest_address,
+                    'invest_amount' => $invest_amount,
+                    'text_domain'   => $text_domain,
+                    'username'      => $username,
+                    'mobile'        => $mobile,
+                    'duty'          => $duty,
+                    'department'    => $department,
+                    'phone'         => $phone,
+                    'wechat'        => $wechat,
+                    'email'         => $email,
+                    'link'          => $link
+                ];
+
+                /* 验证规则 */
+                $validate_collaborator_rule = [
+                    'id'            => 'number',
+                    'type'          => 'require|number|in:1,2',
+                    'status'        => 'require|number|in:0,1',
+                    'company'       => 'require|max:255',
+                    'location'      => 'require|max:500',
+                    'capital_body'       => 'require|number',
+                    'invest_industry'=> 'require|max:300',
+                    'invest_address'=> 'require|max:400',
+                    'invest_amount' => 'require|number',
+                    'text_domain'   => 'require|max:600',
+                    'username'      => 'require|max:120',
+                    'mobile'        => 'require|max:32|unique:tb_user',
+                    'duty'          => 'require|max:255',
+                    'department'    => 'require|max:300',
+                    'phone'         => 'require|max:60',
+                    'wechat'        => 'require|max:60',
+                    'email'         => 'require|email',
+                    'link'          => 'require|max:800',
+                ];
+
+                /* 验证结果 */
+                $result = $this->user_validate->check($validate_collaborator, $validate_collaborator_rule);
+
+                if (true !== $result) {
+                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                }
+
+                /* 返回结果 */
+                if (empty($id)) {
+                    if ($validate_collaborator['status'] !== 0) {
+                        $validate_collaborator['status'] = 0;
+                    }
+                    $collaborator = $this->user_model->save($validate_collaborator);
+                } else {
+                    if ($validate_collaborator['status'] !== 0) {
+                        $validate_collaborator['status'] = 0;
+                    }
+                    $validate_collaborator['update_time'] = date('Y-m-d H:i:s', time());
+                    $collaborator = $this->user_model->where('id', $id)->update($validate_collaborator);
+                    /*$collaborator = $this->user_model->save($validate_collaborator, ['id' => $id]);*/
+                }
+
+                if ($collaborator) {
+                    return $this->return_message(Code::SUCCESS, '合作者数据操作成功');
+                } else {
+                    return $this->return_message(Code::FAILURE, '合作者数据操作失败');
+                }
+                break;
+            default:
+                return $this->return_message(Code::INVALID,'传入的用户类型不对，只能是创业者和合作者');
+                break;
+        }
+    }
+
     /* 创建众筹 */
-    public function crowd_funding() {
+    public function create_crowdfunding() {
 
         /* 接收参数 */
-        $uid = session('user.id');
+        /*$uid = session('user.id');
 
         if (is_null($uid) || empty($uid)) {
             return $this->return_message(Code::INVALID, '用户还没有登录');
-        }
+        }*/
         $title = request()->param('title');
         $target_amount = request()->param('target_amount');
         $expired_time = request()->param('expired_time');
         $rich_text = request()->param('rich_text');
 
-        $price = request()->param('price/a');
-        $introduce = request()->param('introduce/a');
-        $picture = request()->file('picture/a');
+        $products = request()->param('product/a');
+        $pictures = request()->file('picture');
 
-        /* 移动图片 */
-        if ($picture) {
-            $info = $picture->move(ROOT_PATH . 'public' . 'images');
-            if ($info)  {
+        $picture_path = [];
+        foreach($pictures as $key => $picture){
+            // 移动到框架应用根目录/public/uploads/ 目录下
+            $config = [
+                'ext'       => 'jpg,jpeg,png,bmp'
+            ];
+            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
+            if($info){
+                // 成功上传后 获取上传信息
                 $sub_path = str_replace('\\', '/', $info->getSaveName());
-                $picture = "/images/" . $sub_path;
-            }
-        }
-        $current_amount = request()->param('current_amount');
-        $purpose = request()->param('purpose');
-        $proposal = request()->file('proposal');
-        /* 移动项目计划书 */
-        if ($proposal) {
-            $info = $proposal->move(ROOT_PATH . 'public' . DS . 'images');
-            if ($info) {
-                $sub_path = str_replace('\\', '/', $info->getSaveName());
-                $proposal = "images" . $sub_path;
+                $picture = '/images/' . $sub_path;
+                $picture_path[$key] = $picture;
+            }else{
+                // 上传失败获取错误信息
+                echo $picture->getError();
             }
         }
 
@@ -518,137 +747,27 @@ class User extends BasicController {
             'target_amount' => $target_amount,
             'expired_time'  => $expired_time,
             'rich_text'     => $rich_text,
-
-            'current_amount'=> $current_amount,
-            'price'         => $price,
-            'introduce'     => $introduce,
-            'picture'       => $picture,
-            'proposal'      => $proposal,
-            'purpose'       => $purpose
         ];
 
         /* 验证结果 */
         $result = $this->user_validate->scene('crowd_funding')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+            return json(['code' => Code::INVALID, 'message' => $this->user_validate->getError()]);
         }
 
-        /*unset($validate_data['target_amount']);
-        unset($validate_data['expired_time']);
-        unset($validate_data['rich_text']);
-        unset($validate_data['current_amount']);
-        unset($validate_data['price']);
-        unset($validate_data['introduce']);
-        $product = $this->product_model->insertGetId($validate_data);*/
+        $crowd_id = $this->crowd_funding_model->insertGetId($validate_data);
+        $crowdfund_instance = $this->crowd_funding_model->where('id',$crowd_id)->find();
 
+        foreach ($products as $key => $product) {
+            $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key]]);
+        }
 
-        $crowd = $this->crowd_funding_model->insertGetId($validate_data);
-
-        if ($crowd) {
-            return $this->return_message(Code::SUCCESS, '操作数据成功');
+        if ($product_result) {
+            return json(['code' => Code::SUCCESS, 'message' => '操作数据成功']);
         } else {
-            return $this->return_message(Code::FAILURE, '数据操作失败');
+            return json(['code' => Code::SUCCESS, 'message' => '操作数据失败']);
         }
-    }
-
-    /* 用户身份资料 */
-    public function identify() {
-
-        /* 接收参数 */
-        $uid = session('user.id');
-        if (!$uid) {
-            return $this->return_message(Code::FAILURE, '用户还没有登录');
-        } else {
-            $mobile = session('user.mobile');
-        }
-        /* 接收参数 */
-        $id = request()->param('id');
-        $type = intval(request()->param('type/d'));
-        $username = request()->param('username');
-        $password = request()->param('password');
-        $confirm_password = request()->param('confirm_password');
-        $mobile = request()->param('mobile');
-        $enterprise = request()->param('enterprise');
-        $introduce = request()->param('introduce');
-        $industry = request()->param('industry');
-        $capital = request()->param('capital');
-        $revenue = request()->param('revenue');
-        $assets = request()->param('assets');
-        $address = request()->param('address');
-        $duty = request()->param('duty');
-        $department = request()->param('department');
-        $phone = request()->param('phone');
-        $wechat = request()->param('wechat');
-        $email = request()->param('email');
-        $link = request()->param('link');
-        $location = request()->param('location');
-        $textarea = request()->param('textarea');
-
-        /* 验证数据 */
-        $validate_data = [
-            'id'                => $id,
-            'username'          => $username,
-            'password'          => md5($password),
-            'confirm_password'  => $confirm_password,
-            'mobile'            => $mobile,
-            'enterprise'        => $enterprise,
-            'introduce'         => $introduce,
-            'industry'          => $industry,
-            'capital'           => $capital,
-            'revenue'           => $revenue,
-            'assets'            => $assets,
-            'address'           => $address,
-            'duty'              => $duty,
-            'department'        => $department,
-            'phone'             => $phone,
-            'wechat'            => $wechat,
-            'email'             => $email,
-            'link'              => $link,
-            'location'          => $location,
-            'textarea'          => $textarea,
-            'type'              => $type
-        ];
-
-        switch ($type) {
-            case 1:
-                $result = $this->user_validate->scene('entrepreneur')->check($validate_data);
-                if (true !== $result) {
-                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
-                }
-                unset($validate_data['location']);
-                unset($validate_data['textarea']);
-                unset($validate_data['confirm_password']);
-                if (empty($id)) {
-                    $user = $this->user_model->save($validate_data);
-                } else {
-                    $user = $this->user_model->save($validate_data, ['id' => $id]);
-                }
-                break;
-            case 2:
-                $result = $this->user_validate->scene('collaborator')->check($validate_data);
-                if (true !== $result) {
-                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
-                }
-                unset($validate_data['introduce']);
-                unset($validate_data['revenue']);
-                unset($validate_data['confirm_password']);
-                if (empty($id)) {
-                    $user = $this->user_model->save($validate_data);
-                } else {
-                    $user = $this->user_model->save($validate_data, ['id' => $id]);
-                }
-                break;
-            default:
-                break;
-        }
-
-        if ($user) {
-            return $this->return_message(Code::SUCCESS, '数据操作成功');
-        } else {
-            return $this->return_message(Code::FAILURE, '数据操作失败');
-        }
-
     }
 
     /* 合作的产品 */
@@ -732,6 +851,123 @@ class User extends BasicController {
 
     }
 
+    /* 我创建项目 */
+    public function product_listing() {
+
+        /* 接收参数 */
+        $uid = session('user.id');
+
+        if (is_null($uid) || empty($uid)) {
+            return $this->return_message(Code::INVALID, '用户还没有登录');
+        }
+
+        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
+
+        /* 验证参数 */
+        $validate_data = [
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('product')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model
+            ->where('user_id', $uid)
+            ->order('create_time', 'desc')
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '获取我发布的项目成功',$product);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取我发布的项目失败');
+        }
+    }
+
+    /* 创建项目 */
+    public function create_product() {
+
+        /* 接收参数 */
+        $user_id = session('user.id');
+
+        if (is_null($user_id) || empty($user_id)) {
+            return $this->return_message(Code::INVALID, '该用户还没有登录');
+        }
+        $title = request()->param('title');
+        $region = request()->param('region');
+        $industry = request()->param('industry');
+        $turnover = request()->param('turnover');
+        $assets = request()->param('assets');
+        $purpose = request()->param('purpose');
+        $amount = request()->param('amount');
+        $proposal = request()->file('proposal');
+        /* 移动的项目计划书 */
+        if ($proposal) {
+            $config = [
+                'ext'       => 'zip,rar'
+            ];
+            $info = $proposal->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $proposal = '/images/' . $sub_path;
+            } else {
+                return $this->return_message(Code::INVALID,'上传图片格式不对，只允许zip,rar格式');
+            }
+        }
+        $picture = request()->file('picture');
+        if ($picture) {
+            $config = [
+                'ext'       => 'jpg,jpeg,png,bmp'
+            ];
+            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
+            if ($info) {
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $picture = '/images/' . $sub_path;
+            } else {
+                return $this->return_message(Code::INVALID, '上传图片格式不对，只允许jpg,jpeg,png,bmp格式');
+            }
+        }
+        $recommend = request()->param('recommend', 1);
+        $status = request()->param('status',0);
+
+        /* 验证数据 */
+        $validate_data = [
+            'user_id'   => $user_id,
+            'title'     => $title,
+            'region'    => $region,
+            'industry'  => $industry,
+            'turnover'  => $turnover,
+            'assets'    => $assets,
+            'purpose'   => $purpose,
+            'amount'    => $amount,
+            'recommend' => $recommend,
+            'status'    => $status,
+            'proposal'  => $proposal,
+            'picture'   => $picture
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('create_project')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $product = $this->product_model->save($validate_data);
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '创建项目成功');
+        } else {
+            return $this->return_message(Code::FAILURE, '创建项目失败');
+        }
+    }
+
     /* 充值记录 */
     public function recharge_record() {
 
@@ -769,115 +1005,6 @@ class User extends BasicController {
             return $this->return_message(Code::SUCCESS, '获取用户支付记录成功', $recharge);
         } else {
             return $this->return_message(Code::FAILURE, '获取用户支付记录失败');
-        }
-
-    }
-
-    /* 我创建项目 */
-    public function product() {
-
-        /* 接收参数 */
-        $uid = session('user.id');
-
-        if (is_null($uid) || empty($uid)) {
-            return $this->return_message(Code::INVALID, '用户还没有登录');
-        }
-
-        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
-        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
-
-        /* 验证参数 */
-        $validate_data = [
-            'page_size'     => $page_size,
-            'jump_page'     => $jump_page
-        ];
-
-        /* 验证结果 */
-        $result = $this->user_validate->scene('product')->check($validate_data);
-
-        if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->user_validate->getError());
-        }
-
-        /* 返回结果 */
-        $product = $this->user_product_model
-            ->alias('pm')
-            ->where('pm.user_id', $uid)
-            ->join('tb_product tp','tp.id = pm.product_id')
-            ->paginate($page_size, false, ['page' => $jump_page]);
-
-        if ($product) {
-            return $this->return_message(Code::SUCCESS, '获取我发布的项目成功',$product);
-        } else {
-            return $this->return_message(Code::FAILURE, '获取我发布的项目失败');
-        }
-    }
-
-    /* 创建项目 */
-    public function create_product() {
-
-        /* 接收参数 */
-        $uid = session('user.id');
-
-        if (is_null($uid) || empty($uid)) {
-            return $this->return_message(Code::INVALID, '该用户还没有登录');
-        }
-        $title = request()->param('title');
-        $region = request()->param('region');
-        $industry = request()->param('industry');
-        $turnover = request()->param('turnover');
-        $assets = request()->param('assets');
-            $purpose = request()->param('purpose');
-        $amount = request()->param('amount');
-        $proposal = request()->file('proposal');
-        /* 移动的项目计划书 */
-        if ($proposal) {
-            $info = $proposal->move(ROOT_PATH . 'public' . DS . 'images');
-            if ($info) {
-                $sub_path = str_replace('\\', '/', $info->getSaveName());
-                $proposal = '/images/' . $sub_path;
-            }
-        }
-        $picture = request()->file('picture');
-        if ($picture) {
-            $info = $picture->move(ROOT_PATH . 'public' . DS . 'images');
-            if ($info) {
-                $sub_path = str_replace('\\', '/', $info->getSaveName());
-                $picture = '/images/' . $sub_path;
-            }
-        }
-        $recommend = request()->param('recommend', 1);
-        $status = request()->param('status');
-
-        /* 验证数据 */
-        $validate_data = [
-            'uid'       => $uid,
-            'title'     => $title,
-            'region'    => $region,
-            'industry'  => $industry,
-            'turnover'  => $turnover,
-            'assets'    => $assets,
-            'purpose'   => $purpose,
-            'amount'    => $amount,
-            'recommend' => $recommend,
-            'status'    => $status,
-            'proposal'  => $proposal,
-            'picture'   => $picture
-        ];
-
-        /* 验证结果 */
-        $result = $this->user_validate->scene('create_project')->check($validate_data);
-
-        if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->user_validate->getError());
-        }
-
-        /* 返回结果 */
-        $product = $this->product_model->save($validate_data);
-        if ($product) {
-            return $this->return_message(Code::SUCCESS, '创建项目成功');
-        } else {
-            return $this->return_message(Code::FAILURE, '创建项目失败');
         }
     }
 
