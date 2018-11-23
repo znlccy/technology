@@ -10,6 +10,8 @@
 namespace app\index\controller;
 
 use app\index\response\Code;
+use Pingpp\Charge;
+use Pingpp\Pingpp;
 use think\Request;
 use app\index\model\Purchase as PurchaseModel;
 use app\index\model\Product as ProductModel;
@@ -49,6 +51,9 @@ class Purchase extends BasicController {
         /* 接收参数 */
         $product_id = request()->param('product_id');
         $pay_method = request()->param('pay_method');
+        $user_id = session('user.id');
+        Pingpp::setApiKey('sk_test_nbLa9SD84qfHezj1qD1WfPeT');
+        Pingpp::setPrivateKeyPath(APP_PATH.'private.pem');
 
         /* 验证参数 */
         $validate_data = [
@@ -65,64 +70,113 @@ class Purchase extends BasicController {
         $product = $this->product_model->where('id', $product_id)->find();
 
         if ($product) {
+            $app = array('id' => 'app_jj9irPO80arTrDOm');
             $order_id = 'TP'.date('YmdHis', time()).rand(11111,99999);
-            $amount = $product['price'];
 
+            switch ($pay_method) {
+                case 1:
+                    $channel = 'alipay_pc_direct';
+                    $extra = ['success_url' => config('charge.success_url')];
+                    break;
+                case 2:
+                    $channel = 'wx_pub_qr';
+                    $extra = ['product_id' => $product_id];
+                break;
+                default:
+                    break;
+            }
+
+            $order_data = [
+                'order_id'    => $order_id,
+                'amount'      => $product['price'],
+                'pay_method'  => $pay_method,
+                'subject'     => $product['title'],
+                'body'        => $product['title'],
+                'status'      => 0
+            ];
+
+            /* 创建订单 */
+            $order = $this->order_model->save($order_data);
+
+            if ($order) {
+                /*dump($order);die();*/
+                /* 支付订单 */
+                $charge = Charge::create(array(
+                    'order_no'      => $order_id,
+                    'amount'        => $product['price'],
+                    'channel'       => $channel,
+                    'currency'      => 'cny',
+                    'client_ip'     => request()->ip(),
+                    'body'          => $product['title'],
+                    'subject'       => $product['title'],
+                    'app'           => $app,
+                    'extra'         => $extra
+                ));
+
+                /* 保存到本地数据库 */
+                $purchase_data = [
+                    'order_id'      => $order_id,
+                    'user_id'       => $user_id,
+                    'product_id'    => $product_id,
+                    'status'        => 0,
+                    'charge_amount' => $product['price'],
+                    'charge_time'   => date('Y-m-d H:i:s', time())
+                ];
+                $purchase = $this->purchase_model->save($purchase_data);
+                if ($purchase) {
+                    return $this->return_message(Code::SUCCESS, '保存本地数据成功');
+                } else {
+                    return $this->return_message(Code::SUCCESS, '保存本地数据失败');
+                }
+            } else {
+                return $this->return_message(Code::FAILURE, '创建订单失败');
+            }
 
         } else {
             return $this->return_message(Code::FAILURE, '不存在该商品');
         }
 
-        /* 首先创建订单 */
-
-        /* 支付订单，支付方式 */
-
         /* 验证订单，写回数据库 */
     }
 
-    /**
-     * 查询charge 对象
-     */
-    public function retrieve()
-    {
-        $order_no = request()->param('order_no');
-        if (empty($order_no)) {
-            return json(['code' => 401, 'message' => '订单号必须填写']);
-        }
-        $charge_id = ChargeRecord::where('order_no', $order_no)->value('channel_order_no');
-        try {
-            $charge = \Pingpp\Charge::retrieve($charge_id);
-            if ($charge && $charge->paid) {
-                return json(['code' => 200, 'message' => '支付成功']);
-            } else {
-                return json(['code' => 400, 'message' => '未支付']);
-            }
-//            return json(['code' => 200, 'data' => $charge]);
-        } catch (\Pingpp\Error\Base $e) {
-            if ($e->getHttpStatus() != null) {
-                header('Status: ' . $e->getHttpStatus());
-                return json(['code' => 404, 'message' => $e->getHttpBody()]);
-            } else {
-                return json(['code' => 404, 'message' => $e->getMessage()]);
-            }
-        }
-    }
-
-    function verify_signature($raw_data, $signature, $pub_key_path) {
+    public function notify() {
+        $raw_data = file_get_contents('php://input');
+        $headers = \Pingpp\Util\Util::getRequestHeaders();
+        // 签名在头部信息的 x-pingplusplus-signature 字段
+        $signature = isset($headers['X-Pingplusplus-Signature']) ? $headers['X-Pingplusplus-Signature'] : NULL;
+        // 验证签名
+        $pub_key_path = APP_PATH . "/pingplusplus_public_key.pem";
         $pub_key_contents = file_get_contents($pub_key_path);
-        return openssl_verify($raw_data, base64_decode($signature), $pub_key_contents, 'sha256');
-    }
-
-    /**
-     * 支付成功回调接口
-     */
-    public function success_return()
-    {
-        $charge_result = request()->param('result');
-        $order_no = request()->param('out_trade_no');
-        if ($charge_result === 'success') {
-            return json(['code' => 200, 'message' => '支付成功']);
+        $verify_result = openssl_verify($raw_data, base64_decode($signature), $pub_key_contents, 'sha256');
+        if ($verify_result === 1) {
+            // 验证通过
+        } elseif ($verify_result === 0) {
+            http_response_code(400);
+            echo 'verification failed';
+            exit;
+        } else {
+            http_response_code(400);
+            echo 'verification error';
+            exit;
         }
-        return json(['code' => 404, 'message' => '支付失败']);
+        $event = json_decode($raw_data, true);
+        // 对异步通知做处理
+        if (!isset($event->type)) {
+            header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
+            exit("fail");
+        }
+        switch ($event->type) {
+            case "charge.succeeded":
+                // 开发者在此处加入对支付异步通知的处理代码
+                header($_SERVER['SERVER_PROTOCOL'] . ' 200 OK');
+                break;
+            case "refund.succeeded":
+                // 开发者在此处加入对退款异步通知的处理代码
+                header($_SERVER['SERVER_PROTOCOL'] . ' 200 OK');
+                break;
+            default:
+                header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request');
+                break;
+        }
     }
 }

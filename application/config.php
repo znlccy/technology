@@ -292,7 +292,8 @@ return [
 
     //支付配置
     'pay'           => [
-        'apiKey'    => 'sk_test_nbLa9SD84qfHezj1qD1WfPeTzcy',
-        'appId'     => 'app_jj9irPO80arTrDOmzcy'
+        'apiKey'        => 'sk_test_nbLa9SD84qfHezj1qD1WfPeTzcy',
+        'appId'         => 'app_jj9irPO80arTrDOmzcy',
+        'success_url'   => 'http://technology.fh.81youxi.com/index/#/team/charge'
     ],
 ];

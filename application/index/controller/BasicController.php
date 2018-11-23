@@ -30,6 +30,7 @@ class BasicController extends Controller {
         'Product' => ['listing', 'detail'],
         'Index' => ['index'],
         'Verify' => ['attain'],
+        'Purchase' => ['notify','pay'],
         'Sms' => ['attain'],
         'Image' => ['upload'],
     ];
