@@ -16,6 +16,7 @@ class Carousel extends BasisValidate {
         'id'            => 'number',
         'title'         => 'max:255',
         'sort'          => 'number',
+        'description'   => 'max:5000',
         'create_start'  => 'date',
         'create_end'    => 'date',
         'update_start'  => 'date',
@@ -42,6 +43,7 @@ class Carousel extends BasisValidate {
         'publish_end'   => '轮播发布截止时间',
         'status'        => '轮播状态',
         'url'           => '轮播网址',
+        'description'   => '轮播描述',
         'publish_time'  => '轮播发布时间',
         'page_size'     => '分页大小',
         'jump_page'     => '跳转页'
@@ -50,7 +52,7 @@ class Carousel extends BasisValidate {
     /* 验证场景 */
     protected $scene = [
         'listing'       => ['id', 'title', 'sort', 'create_start', 'create_end', 'update_start', 'update_end', 'publish_start', 'publish_end', 'status', 'page_size', 'jump_page'],
-        'save'          => ['id' => 'number', 'title' => 'require', 'url' => 'require', 'sort' => 'require', 'status' => 'require', 'publish_time' => 'date'],
+        'save'          => ['id' => 'number', 'title' => 'require', 'description' => 'require', 'url' => 'require', 'sort' => 'require', 'status' => 'require', 'publish_time' => 'date'],
         'detail'        => ['id' => 'require|number'],
         'delete'        => ['id' => 'require|number']
     ];

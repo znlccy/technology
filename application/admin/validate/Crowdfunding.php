@@ -22,7 +22,6 @@ class Crowdfunding extends BasisValidate {
         'update_end'    => 'date',
         'expired_start' => 'date',
         'expired_end'   => 'date',
-        'current_amount'=> 'number',
         'target_amount' => 'number',
         'expired_time'  => 'date',
         'page_size'     => 'number',
@@ -40,7 +39,6 @@ class Crowdfunding extends BasisValidate {
         'update_end'    => '众筹更新截止时间',
         'expired_start' => '众筹过期起始时间',
         'expired_end'   => '众筹过期截止时间',
-        'current_amount'=> '当前营业额',
         'target_amount' => '目标融资',
         'expired_time'  => '过期时间',
         'page_size'     => '分页大小',
@@ -50,7 +48,7 @@ class Crowdfunding extends BasisValidate {
     /* 验证场景 */
     protected $scene = [
         'listing'       => ['id' => 'number', 'title' => 'max:255', 'status' => 'number|in:0,1', 'create_start' => 'date', 'create_end' => 'date', 'update_start' => 'date', 'update_end' => 'date', 'expired_start' => 'date', 'expired_end' => 'date', 'page_size' => 'number', 'jump_page' => 'number'],
-        'save'          => ['id' => 'number', 'current_amount' => 'require|number', 'target_amount' => 'require|number', 'status' => 'require|number'],
+        'save'          => ['id' => 'number', 'title' => 'require', 'target_amount' => 'require|number', 'status' => 'require|number'],
         'detail'        => ['id' => 'require|number'],
         'delete'        => ['id' => 'require|number'],
         'auditing'      => ['id' => 'require|number', 'status' => 'require|number'],

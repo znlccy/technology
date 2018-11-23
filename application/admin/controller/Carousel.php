@@ -47,6 +47,7 @@ class Carousel extends BasisController {
         $publish_start = request()->param('publish_start');
         $publish_end = request()->param('publish_end');
         $status = request()->param('status');
+        $description = request()->param('description');
         $page_size = request()->param('page_size', $this->carousel_page['PAGE_SIZE']);
         $jump_page = request()->param('jump_page', $this->carousel_page['JUMP_PAGE']);
 
@@ -55,6 +56,7 @@ class Carousel extends BasisController {
             'id'            => $id,
             'title'         => $title,
             'sort'          => $sort,
+            'description'   => $description,
             'create_start'  => $create_start,
             'create_end'    => $create_end,
             'update_start'  => $update_start,
@@ -82,6 +84,10 @@ class Carousel extends BasisController {
 
         if ($title) {
             $conditions['title'] = ['like', '%' . $title . '%'];
+        }
+
+        if ($description) {
+            $conditions['description'] = ['like', '%' . $description . '%'];
         }
 
         if ($sort) {
@@ -134,6 +140,7 @@ class Carousel extends BasisController {
         $id = request()->param('id');
         $title = request()->param('title');
         $url = request()->param('url');
+        $description = request()->param('description');
         $picture = request()->file('picture');
         $sort = request()->param('sort');
         $publish_time = date('Y-m-d H:i:s', time());
@@ -153,6 +160,7 @@ class Carousel extends BasisController {
             'id'            => $id,
             'title'         => $title,
             'url'           => $url,
+            'description'   => $description,
             'picture'       => $picture,
             'sort'          => $sort,
             'publish_time'  => $publish_time,

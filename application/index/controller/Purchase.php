@@ -9,12 +9,23 @@
 
 namespace app\index\controller;
 
+use app\index\response\Code;
 use think\Request;
+use app\index\model\Purchase as PurchaseModel;
+use app\index\model\Product as ProductModel;
+use app\index\model\Order as OrderModel;
+use app\index\validate\Purchase as PurchaseValidate;
 
 class Purchase extends BasicController {
 
     /* 支付模型 */
     protected $purchase_model;
+
+    /* 声明产品模型 */
+    protected $product_model;
+
+    /* 声明订单模型 */
+    protected $order_model;
 
     /* 支付验证 */
     protected $purchase_validate;
@@ -25,122 +36,48 @@ class Purchase extends BasicController {
     /* 默认构造函数 */
     public function __construct(Request $request = null) {
         parent::__construct($request);
+        $this->purchase_model = new PurchaseModel();
+        $this->product_model = new ProductModel();
+        $this->order_model = new OrderModel();
+        $this->purchase_validate = new PurchaseValidate();
+        $this->purchase_page = config('pagination');
     }
 
+    /* 用户支付 */
     public function pay() {
-        $order_no = request()->param('order_no');
-        $charge_type = request()->param('charge_type');
-        // 获取订单信息
-        $order_type = mb_substr($order_no,0,2);
-        if ($order_type == 'XS') {
-            // 销售订单
-            $order_type = 1;
-            $order_info = RecOrder::where('order_no', $order_no)->find();
-        } else {
-            // 杂费订单
-            $order_type = 2;
-            $order_info = IncidentalOrder::where('order_no', $order_no)->find();
-        }
-        if (!$order_info) {
-            return json(['code' => 401, 'message' => '订单号有误']);
-        }
-        switch ($charge_type) {
-            case 1:
-                // 支付宝电脑网站支付
-                $channel = 'alipay_pc_direct';
-                $extra = ['success_url' => config('charge.success_url')];
-                break;
-            case 2:
-                // 微信扫码支付
-                $channel = 'wx_pub_qr';
-                $extra = ['product_id' => $order_no];
-                break;
-            case 3:
-                // 支付宝扫码支付
-                $channel = 'alipay_qr';
-                break;
-            case 4:
-                // 微信公众号支付
-                $channel = 'wx_pub_qr';
-                $extra = ['open_id' => ''];
-                break;
-            default:
-                $channel = '';
-                break;
-        }
-        // 查询order对象
-        $charge_record = ChargeRecord::where('order_no', $order_no)->find();
-        if ($charge_record) {
-            // 返回的charge对象
-            $charge_id = $charge_record['channel_order_no'];
-            try {
-                $charge = \Pingpp\Charge::retrieve($charge_id);
-                if ($charge_type === 2) {
-                    $data = [];
-                    $data['wx_pub_qr'] = $charge['credential']['wx_pub_qr'];
-                    return json(['code' => 200, 'data' => $data]);
-                } else {
-                    echo $charge;
-                }
 
-            } catch (\Pingpp\Error\Base $e) {
-                if ($e->getHttpStatus() != null) {
-                    header('Status: ' . $e->getHttpStatus());
-                    return json(['code' => 401, 'message' => $e->getHttpBody()]);
-                } else {
-                    return json(['code' => 401, 'message' => $e->getMessage()]);
-                }
-            }
-        } else {
-            // 在ping++平台创建charge对象
-            try{
-                $charge = \Pingpp\Charge::create(
-                    array(
-                        'amount' => intval($order_info['price'] * 100),
-                        'app' => ['id' => $this->app_id],
-                        'order_no' => $order_no, // 商户订单号
-                        'subject' => '租赁订单',
-                        'currency' => 'cny',
-                        'body' => 'body',
-                        'channel' => $channel,
-                        'extra' => $extra,
-                        'client_ip' => $_SERVER['REMOTE_ADDR']
-                    )
-                );
-                // 创建收款记录
-                $data = [
-                    'order_no' => $order_no,
-                    'order_type' => $order_type,
-                    'channel_order_no' => $charge['id'],
-                    'charge_amount' => $order_info['price'],
-                    'charge_type' => $charge_type,
-                    'status' => 0
-                ];
-                $result = $this->validate($data, 'Purchase');
-                if (true != $result) {
-                    return json(['code' => 401, 'message' => $result]);
-                }
-                $record = new ChargeRecord();
-                $record->save($data);
-                // Ping++ 返回的order 对象的id
-                if ($charge_type === 2) {
-                    $data = [];
-                    $data['wx_pub_qr'] = $charge['credential']['wx_pub_qr'];
-                    return json(['code' => 200, 'data' => $data]);
-                } else {
-                    echo $charge;
-                }
-                $order_id = $charge['id'];
-            } catch (\Pingpp\Error\Base $e) {
-                // 捕获报错信息
-                if ($e->getHttpStatus() != null) {
-                    header('Status: ' . $e->getHttpStatus());
-                    return json(['code' => 401, 'message' => $e->getHttpBody()]);
-                } else {
-                    return json(['code' => 401, 'message' => $e->getMessage()]);
-                }
-            }
+        /* 接收参数 */
+        $product_id = request()->param('product_id');
+        $pay_method = request()->param('pay_method');
+
+        /* 验证参数 */
+        $validate_data = [
+            'product_id'    => $product_id
+        ];
+
+        /* 验证结果 */
+        $result = $this->purchase_validate->scene('pay')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->purchase_validate->getError());
         }
+
+        $product = $this->product_model->where('id', $product_id)->find();
+
+        if ($product) {
+            $order_id = 'TP'.date('YmdHis', time()).rand(11111,99999);
+            $amount = $product['price'];
+
+
+        } else {
+            return $this->return_message(Code::FAILURE, '不存在该商品');
+        }
+
+        /* 首先创建订单 */
+
+        /* 支付订单，支付方式 */
+
+        /* 验证订单，写回数据库 */
     }
 
     /**
