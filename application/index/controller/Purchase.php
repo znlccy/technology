@@ -9,10 +9,25 @@
 
 namespace app\index\controller;
 
+use think\Request;
+
 class Purchase extends BasicController {
 
-    public function pay()
-    {
+    /* 支付模型 */
+    protected $purchase_model;
+
+    /* 支付验证 */
+    protected $purchase_validate;
+
+    /* 支付分页 */
+    protected $purchase_page;
+
+    /* 默认构造函数 */
+    public function __construct(Request $request = null) {
+        parent::__construct($request);
+    }
+
+    public function pay() {
         $order_no = request()->param('order_no');
         $charge_type = request()->param('charge_type');
         // 获取订单信息
@@ -138,7 +153,6 @@ class Purchase extends BasicController {
             return json(['code' => 401, 'message' => '订单号必须填写']);
         }
         $charge_id = ChargeRecord::where('order_no', $order_no)->value('channel_order_no');
-//        $charge_id = 'ch_ibnrTS4Kuvz5Xnn90KHqf9C8';
         try {
             $charge = \Pingpp\Charge::retrieve($charge_id);
             if ($charge && $charge->paid) {
