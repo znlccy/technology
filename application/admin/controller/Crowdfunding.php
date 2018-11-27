@@ -133,12 +133,13 @@ class Crowdfunding extends BasisController {
     public function save() {
 
         /* 接收参数 */
+        $id = request()->param('id');
         $title = request()->param('title');
         $target_amount = request()->param('target_amount');
         $expired_time = request()->param('expired_time');
         $rich_text = request()->param('rich_text');
         $products = request()->param('product/a');
-        $pictures = request()->file('picture/a');
+        $pictures = request()->file('picture');
 
         $picture_path = [];
         foreach($pictures as $key => $picture){
@@ -154,7 +155,10 @@ class Crowdfunding extends BasisController {
                 $picture_path[$key] = $picture;
             }else{
                 // 上传失败获取错误信息
-                return $this->return_message(Code::INVALID, '上传图片格式不对，只允许jpg,jpeg,png格式');
+                return json([
+                    'code'      => '200',
+                    'message'   => $this->crowdfunding_validate->getError()
+                ]);
             }
         }
 
@@ -164,26 +168,41 @@ class Crowdfunding extends BasisController {
             'target_amount' => $target_amount,
             'expired_time'  => $expired_time,
             'rich_text'     => $rich_text,
+            'create_time'   => date('Y-m-d H:i:s', time())
         ];
 
         /* 验证结果 */
         $result = $this->crowdfunding_validate->scene('crowd_funding')->check($validate_data);
 
         if (true !== $result) {
-            return json(['code' => Code::INVALID, 'message' => $this->crowdfunding_validate->getError()]);
+            return $this->return_message(Code::INVALID, $this->crowdfunding_validate->getError());
         }
 
-        $crowd_id = $this->crowdfunding_model->insertGetId($validate_data);
-        $crowdfund_instance = $this->crowdfunding_model->where('id',$crowd_id)->find();
+        if (empty($id)) {
+            $crowd_id = $this->crowdfunding_model->insertGetId($validate_data);
 
-        foreach ($products as $key => $product) {
-            $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+            $crowdfund_instance = $this->crowdfunding_model->where('id',$crowd_id)->find();
+
+            foreach ($products as $key => $product) {
+                $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+            }
+        } else {
+            if (!empty($validate_data['create_time'])) {
+                unset($validate_data['create_time']);
+            }
+            $validate_data['update_time'] = date('Y-m-d H:i:s', time());
+            $crowd_id = $this->crowdfunding_model->save($validate_data, ['id' => $id]);
+            $crowdfund_instance = $this->crowdfunding_model->where('id',$id)->find();
+
+            foreach ($products as $key => $product) {
+                $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+            }
         }
 
         if ($product_result) {
-            return json(['code' => Code::SUCCESS, 'message' => '操作数据成功']);
+            return $this->return_message(Code::SUCCESS, '数据操作成功');
         } else {
-            return json(['code' => Code::SUCCESS, 'message' => '操作数据失败']);
+            return $this->return_message(Code::FAILURE, '数据操作失败');
         }
 
     }
@@ -207,12 +226,17 @@ class Crowdfunding extends BasisController {
         }
 
         /* 返回结果 */
-        $crowdfunding = $this->crowdfunding_model->where('id', '=', $id)->find();
+        $crowdfunding = $this->crowdfunding_model
+            ->where('id', $id)
+            ->with('Product', function ($query) use ($id) {
+                $query->where('crowd_id', '=', $id);
+            })
+            ->find();
 
         if ($crowdfunding) {
-            return $this->return_message(Code::SUCCESS, '获取众筹成功', $crowdfunding);
+            return $this->return_message(Code::SUCCESS,  '获取众筹成功', $crowdfunding);
         } else {
-            return $this->return_message(Code::FAILURE, '获取众筹失败');
+            return $this->return_message(Code::FAILURE,  '获取众筹失败');
         }
 
     }
