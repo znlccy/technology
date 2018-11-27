@@ -135,6 +135,7 @@ class Crowdfunding extends BasisController {
         /* 接收参数 */
         $id = request()->param('id');
         $title = request()->param('title');
+        $current_amount = request()->param('current_amount');
         $target_amount = request()->param('target_amount');
         $expired_time = request()->param('expired_time');
         $rich_text = request()->param('rich_text');
@@ -165,6 +166,7 @@ class Crowdfunding extends BasisController {
         /* 验证数据 */
         $validate_data = [
             'title'         => $title,
+            'current_amount'=> $current_amount,
             'target_amount' => $target_amount,
             'expired_time'  => $expired_time,
             'rich_text'     => $rich_text,
