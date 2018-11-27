@@ -133,44 +133,57 @@ class Crowdfunding extends BasisController {
     public function save() {
 
         /* 接收参数 */
-        $id = request()->param('id');
         $title = request()->param('title');
         $target_amount = request()->param('target_amount');
-        $status = request()->param('status', 0);
-        $rich_text = request()->param('rich_text');
         $expired_time = request()->param('expired_time');
+        $rich_text = request()->param('rich_text');
+        $products = request()->param('product/a');
+        $pictures = request()->file('picture/a');
+
+        $picture_path = [];
+        foreach($pictures as $key => $picture){
+            // 移动到框架应用根目录/public/uploads/ 目录下
+            $config = [
+                'ext'       => 'jpg,jpeg,png,bmp'
+            ];
+            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
+            if($info){
+                // 成功上传后 获取上传信息
+                $sub_path = str_replace('\\', '/', $info->getSaveName());
+                $picture = '/images/' . $sub_path;
+                $picture_path[$key] = $picture;
+            }else{
+                // 上传失败获取错误信息
+                return $this->return_message(Code::INVALID, '上传图片格式不对，只允许jpg,jpeg,png格式');
+            }
+        }
 
         /* 验证数据 */
         $validate_data = [
-            'id'            => $id,
             'title'         => $title,
             'target_amount' => $target_amount,
-            'status'        => $status,
+            'expired_time'  => $expired_time,
             'rich_text'     => $rich_text,
-            'expired_time'  => $expired_time
         ];
 
         /* 验证结果 */
-        $result = $this->crowdfunding_validate->scene('save')->check($validate_data);
+        $result = $this->crowdfunding_validate->scene('crowd_funding')->check($validate_data);
 
         if (true !== $result) {
-            return $this->return_message(Code::INVALID, $this->crowdfunding_validate->getError());
+            return json(['code' => Code::INVALID, 'message' => $this->crowdfunding_validate->getError()]);
         }
 
-        /* 返回数据 */
-        if (empty($id)) {
-            $crowdfunding = $this->crowdfunding_model->save($validate_data);
-        } else {
-            if (empty($validate_data['picture'])) {
-                unset($validate_data['picture']);
-            }
-            $crowdfunding = $this->crowdfunding_model->save($validate_data, ['id' => $id]);
+        $crowd_id = $this->crowdfunding_model->insertGetId($validate_data);
+        $crowdfund_instance = $this->crowdfunding_model->where('id',$crowd_id)->find();
+
+        foreach ($products as $key => $product) {
+            $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
         }
 
-        if ($crowdfunding) {
-            return $this->return_message(Code::SUCCESS, '数据操作成功');
+        if ($product_result) {
+            return json(['code' => Code::SUCCESS, 'message' => '操作数据成功']);
         } else {
-            return $this->return_message(Code::FAILURE, '数据操作失败');
+            return json(['code' => Code::SUCCESS, 'message' => '操作数据失败']);
         }
 
     }

@@ -21,4 +21,9 @@ class Product extends BasisModel {
     public function users() {
         return $this->belongsToMany('User', 'tb_user_product', 'user_id', 'product_id');
     }
+
+    /* 关联的表 */
+    public function Crowdfunding() {
+        return $this->belongsTo('Crowdfunding', 'crowd_id', 'id');
+    }
 }
