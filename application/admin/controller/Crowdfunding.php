@@ -194,8 +194,14 @@ class Crowdfunding extends BasisController {
             $crowd_id = $this->crowdfunding_model->save($validate_data, ['id' => $id]);
             $crowdfund_instance = $this->crowdfunding_model->where('id',$id)->find();
 
-            foreach ($products as $key => $product) {
-                $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+            if (empty($pictures)) {
+                foreach ($products as $key => $product) {
+                    $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'],  'title' => $product['title']]);
+                }
+            } else {
+                foreach ($products as $key => $product) {
+                    $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+                }
             }
         }
 
