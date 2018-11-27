@@ -10,6 +10,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Crowdfunding as CrowdfundingModel;
+use app\admin\model\Product as ProductModel;
 use app\admin\response\Code;
 use app\admin\validate\Crowdfunding as CrowdfundingValidate;
 use think\Request;
@@ -18,6 +19,9 @@ class Crowdfunding extends BasisController {
 
     /* 声明众筹模型 */
     protected $crowdfunding_model;
+
+    /* 声明产品模型 */
+    protected $product_model;
 
     /* 声明众筹验证器 */
     protected $crowdfunding_validate;
@@ -29,6 +33,7 @@ class Crowdfunding extends BasisController {
     public function __construct(Request $request = null) {
         parent::__construct($request);
         $this->crowdfunding_model = new CrowdfundingModel();
+        $this->product_model = new ProductModel();
         $this->crowdfunding_validate = new CrowdfundingValidate();
         $this->crowdfunding_page = config('pagination');
     }
@@ -269,6 +274,9 @@ class Crowdfunding extends BasisController {
 
         /* 返回结果 */
         $crowdfunding = $this->crowdfunding_model->where('id', '=', $id)->delete();
+
+        /* 级联删除 */
+        $product = $this->product_model->where('crowd_id', $id)->delete();
 
         if ($crowdfunding) {
             return $this->return_message(Code::SUCCESS, '删除众筹成功');
