@@ -376,5 +376,4 @@ class Purchase extends BasisController {
             return $this->return_message(Code::FAILURE, '订单支付失败');
         }
     }
-
 }

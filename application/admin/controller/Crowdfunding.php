@@ -10,7 +10,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\Crowdfunding as CrowdfundingModel;
-use app\admin\model\Product as ProductModel;
+use app\admin\model\Goods as GoodsModel;
 use app\admin\response\Code;
 use app\admin\validate\Crowdfunding as CrowdfundingValidate;
 use think\Request;
@@ -21,7 +21,7 @@ class Crowdfunding extends BasisController {
     protected $crowdfunding_model;
 
     /* 声明产品模型 */
-    protected $product_model;
+    protected $goods_model;
 
     /* 声明众筹验证器 */
     protected $crowdfunding_validate;
@@ -33,7 +33,7 @@ class Crowdfunding extends BasisController {
     public function __construct(Request $request = null) {
         parent::__construct($request);
         $this->crowdfunding_model = new CrowdfundingModel();
-        $this->product_model = new ProductModel();
+        $this->goods_model = new GoodsModel();
         $this->crowdfunding_validate = new CrowdfundingValidate();
         $this->crowdfunding_page = config('pagination');
     }
@@ -144,7 +144,7 @@ class Crowdfunding extends BasisController {
         $target_amount = request()->param('target_amount');
         $expired_time = request()->param('expired_time');
         $rich_text = request()->param('rich_text');
-        $products = request()->param('product/a');
+        $goods = request()->param('goods/a');
         $pictures = request()->file('picture');
 
         $picture_path = [];
@@ -190,8 +190,8 @@ class Crowdfunding extends BasisController {
 
             $crowdfund_instance = $this->crowdfunding_model->where('id',$crowd_id)->find();
 
-            foreach ($products as $key => $product) {
-                $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+            foreach ($goods as $key => $good) {
+                $product_result = $crowdfund_instance->Goods()->save(['price' => $good['price'], 'introduce' => $good['introduce'], 'picture' => $picture_path[$key], 'title' => $good['title']]);
             }
         } else {
             if (!empty($validate_data['create_time'])) {
@@ -202,12 +202,12 @@ class Crowdfunding extends BasisController {
             $crowdfund_instance = $this->crowdfunding_model->where('id',$id)->find();
 
             if (empty($pictures)) {
-                foreach ($products as $key => $product) {
-                    $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'],  'title' => $product['title']]);
+                foreach ($goods as $key => $good) {
+                    $product_result = $crowdfund_instance->Goods()->save(['price' => $good['price'], 'introduce' => $good['introduce'],  'title' => $good['title']]);
                 }
             } else {
-                foreach ($products as $key => $product) {
-                    $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+                foreach ($goods as $key => $good) {
+                    $product_result = $crowdfund_instance->Goods()->save(['price' => $good['price'], 'introduce' => $good['introduce'], 'picture' => $picture_path[$key], 'title' => $good['title']]);
                 }
             }
         }
@@ -241,7 +241,7 @@ class Crowdfunding extends BasisController {
         /* 返回结果 */
         $crowdfunding = $this->crowdfunding_model
             ->where('id', $id)
-            ->with('Product', function ($query) use ($id) {
+            ->with('Goods', function ($query) use ($id) {
                 $query->where('crowd_id', '=', $id);
             })
             ->find();
@@ -276,7 +276,7 @@ class Crowdfunding extends BasisController {
         $crowdfunding = $this->crowdfunding_model->where('id', '=', $id)->delete();
 
         /* 级联删除 */
-        $product = $this->product_model->where('crowd_id', $id)->delete();
+        $product = $this->goods_model->where('crowd_id', $id)->delete();
 
         if ($crowdfunding) {
             return $this->return_message(Code::SUCCESS, '删除众筹成功');

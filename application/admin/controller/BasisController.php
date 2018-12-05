@@ -31,6 +31,7 @@ class BasisController extends Controller {
     protected  $except_auth = [
         'Admin' => ['login', 'account_login', 'role', 'mobile_login'],
         'Information' => ['publisher'],
+        'Crowdfunding'=> ['detail'],
         'Service' => ['category'],
         'Image' => ['upload'],
         'Permission' => ['node']
