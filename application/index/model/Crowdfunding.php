@@ -18,8 +18,8 @@ class Crowdfunding extends BasicModel {
     protected $table = 'tb_crowdfunding';
 
     /* 关联的表 */
-    public function Product() {
-        return $this->hasMany('Product', 'crowd_id', 'id');
+    public function Goods() {
+        return $this->hasMany('Goods', 'crowd_id', 'id');
     }
 
     /* 设置富文本 */

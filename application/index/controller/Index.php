@@ -38,28 +38,33 @@ class Index extends BasicController {
         $carousel = $this->carousel_model
             ->order('id', 'desc')
             ->where('status', '=', '1')
-            ->limit(4)
+            ->limit(6)
             ->select();
 
         /* 返回科技产品 */
         $display = $this->display_model
             ->order('id', 'desc')
             ->where('status', '=', '1')
-            ->limit(3)
+            ->limit(6)
             ->select();
 
         /* 返回产品 */
         $product = $this->product_model
             ->order('id', 'desc')
             ->where('status', '=', '1')
-            ->limit(3)
+            ->limit(6)
             ->select();
 
         /* 返回众筹 */
+        $crowd_ids = $this->crowdfunding_model->order('id', 'desc')->field('id')->limit(6)->find();
         $crowdfunding = $this->crowdfunding_model
             ->order('id', 'desc')
-            ->limit(3)
+            ->with('goods', function ($query) use ($crowd_ids) {
+                    $query('crowd_id', 'in', $crowd_ids);
+                })
+            ->limit(6)
             ->select();
+
 
         /* 返回最后数据 */
         $index = array_merge(['carousel' => $carousel, 'display' => $display, 'product' => $product, 'crowdfunding' => $crowdfunding]);

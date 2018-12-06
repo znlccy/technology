@@ -54,8 +54,16 @@ class Crowdfunding extends BasicController {
         }
 
         /* 返回结果 */
+        $crowd_ids = $this->crowdfunding_model
+            ->order('id', 'desc')
+            ->field('id')
+            ->paginate($page_size, false, ['page' => $page_size]);
+
         $crowdfunding = $this->crowdfunding_model
             ->order('id', 'desc')
+            ->with('Goods', function ($query) use ($crowd_ids) {
+                $query->where('crowd_id', 'in', $crowd_ids);
+            })
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($crowdfunding) {
@@ -84,7 +92,12 @@ class Crowdfunding extends BasicController {
         }
 
         /* 返回数据 */
-        $crowdfunding = $this->crowdfunding_model->where('id', $id)->find();
+        $crowdfunding = $this->crowdfunding_model
+            ->with('goods', function ($query) use ($id) {
+                $query('crowd_id', '=', $id);
+            })
+            ->limit(6)
+            ->find();
 
         if ($crowdfunding) {
             return $this->return_message(Code::SUCCESS, '获取众筹详情成功', $crowdfunding);

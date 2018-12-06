@@ -31,6 +31,7 @@ class BasicController extends Controller {
         'Index' => ['index'],
         'Verify' => ['attain'],
         'Purchase' => ['notify','pay'],
+        'Crowdfunding' => ['listing', 'detail'],
         'Sms' => ['attain'],
         'Image' => ['upload'],
     ];
