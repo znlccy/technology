@@ -126,7 +126,7 @@ class User extends BasicController {
         $token = general_token($mobile, $password);
         Session::set('access_token', $token);
 
-        return json(['code' => '200', 'message'   => '登录成功',  'access_token' => $token, 'mobile' => $mobile]);
+        return json(['code' => '200', 'message'   => '登录成功',  'access_token' => $token, 'mobile' => $mobile, 'type' => $user['type']]);
     }
 
     /**
@@ -192,7 +192,8 @@ class User extends BasicController {
                 'code'      => '200',
                 'message'   => '注册成功',
                 'access_token' => $token,
-                'mobile' => $mobile
+                'mobile' => $mobile,
+                'type'  => $this->user_model->where('id', $user_data['id'])->field('type')->find()
             ]);
         } else {
             return json([
@@ -565,7 +566,7 @@ class User extends BasicController {
                 $validate_entrepreneur = [
                     'id'            => $id,
                     'type'          => $type,
-                    'status'        => $status,
+                    'status'        => 0,
                     'enterprise'    => $enterprise,
                     'introduce'     => $introduce,
                     'industry'      => $industry,
@@ -595,7 +596,7 @@ class User extends BasicController {
                     'revenue'       => 'require|number|in:0,1',
                     'assets'        => 'require|number',
                     'username'      => 'require|max:120',
-                    'mobile'        => 'require|max:32|unique:tb_user',
+                    'mobile'        => 'require|max:32',
                     'duty'          => 'require|max:255',
                     'department'    => 'require|max:300',
                     'phone'         => 'require|max:60',
@@ -623,6 +624,9 @@ class User extends BasicController {
                         $validate_entrepreneur['status'] = 0;
                     }
                     $validate_entrepreneur['update_time'] = date('Y-m-d H:i:s', time());
+                    if ($validate_entrepreneur['mobile'] !== null) {
+                        unset($validate_entrepreneur['mobile']);
+                    }
                     $entrepreneur = $this->user_model->where('id', $id)->update($validate_entrepreneur);
                 }
 
@@ -646,7 +650,7 @@ class User extends BasicController {
                 $validate_collaborator = [
                     'id'            => $id,
                     'type'          => $type,
-                    'status'        => $status,
+                    'status'        => 0,
                     'company'       => $company,
                     'location'      => $location,
                     'capital_body'  => $capital_body,
@@ -677,7 +681,7 @@ class User extends BasicController {
                     'invest_amount' => 'require|number',
                     'text_domain'   => 'require|max:600',
                     'username'      => 'require|max:120',
-                    'mobile'        => 'require|max:32|unique:tb_user',
+                    'mobile'        => 'require|max:32',
                     'duty'          => 'require|max:255',
                     'department'    => 'require|max:300',
                     'phone'         => 'require|max:60',
@@ -704,6 +708,9 @@ class User extends BasicController {
                         $validate_collaborator['status'] = 0;
                     }
                     $validate_collaborator['update_time'] = date('Y-m-d H:i:s', time());
+                    if ($validate_collaborator['mobile'] !== null) {
+                        unset($validate_collaborator['mobile']);
+                    }
                     $collaborator = $this->user_model->where('id', $id)->update($validate_collaborator);
                     /*$collaborator = $this->user_model->save($validate_collaborator, ['id' => $id]);*/
                 }

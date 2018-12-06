@@ -14,7 +14,7 @@ use Pingpp\Charge;
 use Pingpp\Pingpp;
 use think\Request;
 use app\index\model\Purchase as PurchaseModel;
-use app\index\model\Product as ProductModel;
+use app\index\model\Goods as GoodsModel;
 use app\index\model\Order as OrderModel;
 use app\index\validate\Purchase as PurchaseValidate;
 
@@ -24,7 +24,7 @@ class Purchase extends BasicController {
     protected $purchase_model;
 
     /* 声明产品模型 */
-    protected $product_model;
+    protected $goods_model;
 
     /* 声明订单模型 */
     protected $order_model;
@@ -39,7 +39,7 @@ class Purchase extends BasicController {
     public function __construct(Request $request = null) {
         parent::__construct($request);
         $this->purchase_model = new PurchaseModel();
-        $this->product_model = new ProductModel();
+        $this->goods_model = new GoodsModel();
         $this->order_model = new OrderModel();
         $this->purchase_validate = new PurchaseValidate();
         $this->purchase_page = config('pagination');
@@ -49,7 +49,7 @@ class Purchase extends BasicController {
     public function pay() {
 
         /* 接收参数 */
-        $product_id = request()->param('product_id');
+        $goods_id = request()->param('goods_id');
         $pay_method = request()->param('pay_method');
         $user_id = session('user.id');
         Pingpp::setApiKey('sk_test_nbLa9SD84qfHezj1qD1WfPeT');
@@ -57,7 +57,7 @@ class Purchase extends BasicController {
 
         /* 验证参数 */
         $validate_data = [
-            'product_id'    => $product_id
+            'goods_id'    => $goods_id
         ];
 
         /* 验证结果 */
@@ -67,7 +67,7 @@ class Purchase extends BasicController {
             return $this->return_message(Code::INVALID, $this->purchase_validate->getError());
         }
 
-        $product = $this->product_model->where('id', $product_id)->find();
+        $product = $this->goods_model->where('id', goods_id)->find();
 
         if ($product) {
             $app = array('id' => 'app_jj9irPO80arTrDOm');
@@ -80,7 +80,7 @@ class Purchase extends BasicController {
                     break;
                 case 2:
                     $channel = 'wx_pub_qr';
-                    $extra = ['product_id' => $product_id];
+                    $extra = ['product_id' => $goods_id];
                 break;
                 default:
                     break;
@@ -117,7 +117,7 @@ class Purchase extends BasicController {
                 $purchase_data = [
                     'order_id'      => $order_id,
                     'user_id'       => $user_id,
-                    'product_id'    => $product_id,
+                    'product_id'    => $goods_id,
                     'status'        => 0,
                     'charge_amount' => $product['price'],
                     'charge_time'   => date('Y-m-d H:i:s', time())
@@ -136,7 +136,6 @@ class Purchase extends BasicController {
             return $this->return_message(Code::FAILURE, '不存在该商品');
         }
 
-        /* 验证订单，写回数据库 */
     }
 
     public function notify() {
@@ -145,7 +144,7 @@ class Purchase extends BasicController {
         // 签名在头部信息的 x-pingplusplus-signature 字段
         $signature = isset($headers['X-Pingplusplus-Signature']) ? $headers['X-Pingplusplus-Signature'] : NULL;
         // 验证签名
-        $pub_key_path = APP_PATH . "/pingplusplus_public_key.pem";
+        $pub_key_path = APP_PATH . "/public.pem";
         $pub_key_contents = file_get_contents($pub_key_path);
         $verify_result = openssl_verify($raw_data, base64_decode($signature), $pub_key_contents, 'sha256');
         if ($verify_result === 1) {
@@ -169,6 +168,8 @@ class Purchase extends BasicController {
             case "charge.succeeded":
                 // 开发者在此处加入对支付异步通知的处理代码
                 header($_SERVER['SERVER_PROTOCOL'] . ' 200 OK');
+                $order_no = $event['data']['object']['order_no'];
+
                 break;
             case "refund.succeeded":
                 // 开发者在此处加入对退款异步通知的处理代码
