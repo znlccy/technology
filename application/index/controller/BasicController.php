@@ -34,6 +34,7 @@ class BasicController extends Controller {
         'Crowdfunding' => ['listing', 'detail'],
         'Sms' => ['attain'],
         'Image' => ['upload'],
+        'Region' => ['listing']
     ];
 
     public function __construct(Request $request = null)

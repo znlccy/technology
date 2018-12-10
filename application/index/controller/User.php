@@ -575,7 +575,6 @@ class User extends BasicController {
                     'assets'        => $assets,
                     'address'       => $address,
                     'username'      => $username,
-                    'mobile'        => $mobile,
                     'duty'          => $duty,
                     'department'    => $department,
                     'phone'         => $phone,
@@ -596,7 +595,6 @@ class User extends BasicController {
                     'revenue'       => 'require|number|in:0,1',
                     'assets'        => 'require|number',
                     'username'      => 'require|max:120',
-                    'mobile'        => 'require|max:32',
                     'duty'          => 'require|max:255',
                     'department'    => 'require|max:300',
                     'phone'         => 'require|max:60',
@@ -620,6 +618,9 @@ class User extends BasicController {
                 } else {
                     unset($validate_entrepreneur['mobile']);
                     unset($validate_entrepreneur_rule['mobile']);
+                    unset($validate_entrepreneur['phone']);
+                    unset($validate_entrepreneur_rule['phone']);
+
                     /* 验证结果 */
                     $result = $this->user_validate->check($validate_entrepreneur, $validate_entrepreneur_rule);
 
@@ -631,6 +632,7 @@ class User extends BasicController {
                         $validate_entrepreneur['status'] = 0;
                     }
                     $validate_entrepreneur['update_time'] = date('Y-m-d H:i:s', time());
+
                     $entrepreneur = $this->user_model->where('id', $id)->update($validate_entrepreneur);
                 }
 
@@ -663,7 +665,6 @@ class User extends BasicController {
                     'invest_amount' => $invest_amount,
                     'text_domain'   => $text_domain,
                     'username'      => $username,
-                    'mobile'        => $mobile,
                     'duty'          => $duty,
                     'department'    => $department,
                     'phone'         => $phone,
@@ -685,7 +686,6 @@ class User extends BasicController {
                     'invest_amount' => 'require|number',
                     'text_domain'   => 'require|max:600',
                     'username'      => 'require|max:120',
-                    'mobile'        => 'require|max:32',
                     'duty'          => 'require|max:255',
                     'department'    => 'require|max:300',
                     'phone'         => 'require|max:60',
@@ -711,6 +711,8 @@ class User extends BasicController {
                 } else {
                     unset($validate_collaborator['mobile']);
                     unset($validate_collaborator_rule['mobile']);
+                    unset($validate_collaborator['phone']);
+                    unset($validate_collaborator_rule['phone']);
 
                     /* 验证结果 */
                     $result = $this->user_validate->check($validate_collaborator, $validate_collaborator_rule);
