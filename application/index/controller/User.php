@@ -193,7 +193,7 @@ class User extends BasicController {
                 'message'   => '注册成功',
                 'access_token' => $token,
                 'mobile' => $mobile,
-                'type'  => $this->user_model->where('id', $user_data['id'])->field('type')->find()
+                'type'  => intval($type)
             ]);
         } else {
             return json([
