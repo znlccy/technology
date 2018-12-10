@@ -618,8 +618,6 @@ class User extends BasicController {
                 } else {
                     unset($validate_entrepreneur['mobile']);
                     unset($validate_entrepreneur_rule['mobile']);
-                    unset($validate_entrepreneur['phone']);
-                    unset($validate_entrepreneur_rule['phone']);
 
                     /* 验证结果 */
                     $result = $this->user_validate->check($validate_entrepreneur, $validate_entrepreneur_rule);
@@ -711,8 +709,6 @@ class User extends BasicController {
                 } else {
                     unset($validate_collaborator['mobile']);
                     unset($validate_collaborator_rule['mobile']);
-                    unset($validate_collaborator['phone']);
-                    unset($validate_collaborator_rule['phone']);
 
                     /* 验证结果 */
                     $result = $this->user_validate->check($validate_collaborator, $validate_collaborator_rule);
@@ -805,7 +801,10 @@ class User extends BasicController {
 
     /* 创建众筹列表 */
     public function crowd_listing() {
+
         $user_id = session('user.id');
+
+
 
         if (is_null($user_id) || empty($user_id)) {
             return $this->return_message(Code::FAILURE, '用户还没登录');
@@ -835,8 +834,7 @@ class User extends BasicController {
         }
 
         $product = $this->crowd_funding_model
-            ->where('user_id', '=', $user_id)
-            ->where('status', '=', '1')
+            ->where(['user_id' => $user_id])
             ->paginate($page_size, false, ['page' => $jump_page]);
 
         if ($product) {

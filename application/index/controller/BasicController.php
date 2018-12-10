@@ -25,7 +25,7 @@ class BasicController extends Controller {
     // 无需验证方法
 
     protected  $except_auth = [
-        'User' => ['login', 'register', 'recover_pass', 'change_pass', 'dump_excel'],
+        'User' => ['login', 'register', 'recover_pass', 'change_pass', 'dump_excel', 'crowd_listing'],
         'Display' => ['listing', 'detail'],
         'Product' => ['listing', 'detail'],
         'Index' => ['index'],

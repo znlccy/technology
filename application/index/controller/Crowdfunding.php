@@ -93,8 +93,9 @@ class Crowdfunding extends BasicController {
 
         /* 返回数据 */
         $crowdfunding = $this->crowdfunding_model
-            ->with('goods', function ($query) use ($id) {
-                $query('crowd_id', '=', $id);
+            ->where('id', '=', $id)
+            ->with('Goods', function ($query) use ($id) {
+                $query->where('crowd_id', '=', $id);
             })
             ->limit(6)
             ->find();
