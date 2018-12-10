@@ -605,28 +605,32 @@ class User extends BasicController {
                     'link'          => 'require|max:800',
                 ];
 
-                /* 验证结果 */
-                $result = $this->user_validate->check($validate_entrepreneur, $validate_entrepreneur_rule);
-
-                if (true != $result) {
-                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
-                }
-
                 /* 返回结果 */
                 if (empty($id)) {
+                    /* 验证结果 */
+                    $result = $this->user_validate->check($validate_entrepreneur, $validate_entrepreneur_rule);
+
+                    if (true != $result) {
+                        return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                    }
                     if ($validate_entrepreneur['status'] !== 0) {
                         $validate_entrepreneur['status'] = 0;
                     }
                     $entrepreneur = $this->user_model->save($validate_entrepreneur);
                 } else {
+                    unset($validate_entrepreneur['mobile']);
+                    unset($validate_entrepreneur_rule['mobile']);
+                    /* 验证结果 */
+                    $result = $this->user_validate->check($validate_entrepreneur, $validate_entrepreneur_rule);
+
+                    if (true != $result) {
+                        return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                    }
 
                     if ($validate_entrepreneur['status'] !== 0) {
                         $validate_entrepreneur['status'] = 0;
                     }
                     $validate_entrepreneur['update_time'] = date('Y-m-d H:i:s', time());
-                    if ($validate_entrepreneur['mobile'] !== null) {
-                        unset($validate_entrepreneur['mobile']);
-                    }
                     $entrepreneur = $this->user_model->where('id', $id)->update($validate_entrepreneur);
                 }
 
@@ -690,27 +694,34 @@ class User extends BasicController {
                     'link'          => 'require|max:800',
                 ];
 
-                /* 验证结果 */
-                $result = $this->user_validate->check($validate_collaborator, $validate_collaborator_rule);
-
-                if (true !== $result) {
-                    return $this->return_message(Code::INVALID, $this->user_validate->getError());
-                }
-
                 /* 返回结果 */
                 if (empty($id)) {
+
+                    /* 验证结果 */
+                    $result = $this->user_validate->check($validate_collaborator, $validate_collaborator_rule);
+
+                    if (true !== $result) {
+                        return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                    }
+
                     if ($validate_collaborator['status'] !== 0) {
                         $validate_collaborator['status'] = 0;
                     }
                     $collaborator = $this->user_model->save($validate_collaborator);
                 } else {
+                    unset($validate_collaborator['mobile']);
+                    unset($validate_collaborator_rule['mobile']);
+
+                    /* 验证结果 */
+                    $result = $this->user_validate->check($validate_collaborator, $validate_collaborator_rule);
+
+                    if (true !== $result) {
+                        return $this->return_message(Code::INVALID, $this->user_validate->getError());
+                    }
                     if ($validate_collaborator['status'] !== 0) {
                         $validate_collaborator['status'] = 0;
                     }
                     $validate_collaborator['update_time'] = date('Y-m-d H:i:s', time());
-                    if ($validate_collaborator['mobile'] !== null) {
-                        unset($validate_collaborator['mobile']);
-                    }
                     $collaborator = $this->user_model->where('id', $id)->update($validate_collaborator);
                     /*$collaborator = $this->user_model->save($validate_collaborator, ['id' => $id]);*/
                 }
