@@ -60,6 +60,7 @@ class Crowdfunding extends BasicController {
             ->paginate($page_size, false, ['page' => $page_size]);
 
         $crowdfunding = $this->crowdfunding_model
+            ->where('status', '=', 1)
             ->order('id', 'desc')
             ->with('Goods', function ($query) use ($crowd_ids) {
                 $query->where('crowd_id', 'in', $crowd_ids);
@@ -93,7 +94,7 @@ class Crowdfunding extends BasicController {
 
         /* 返回数据 */
         $crowdfunding = $this->crowdfunding_model
-            ->where('id', '=', $id)
+            ->where('id', '=', id)
             ->with('Goods', function ($query) use ($id) {
                 $query->where('crowd_id', '=', $id);
             })
