@@ -36,7 +36,7 @@ class Product extends BasicController {
     public function listing() {
 
         /* 接收参数 */
-        $page_size = request()->param('page_size', $this->product_page['JUMP_PAGE']);
+        $page_size = request()->param('page_size', $this->product_page['PAGE_SIZE']);
         $jump_page = request()->param('jump_page', $this->product_page['JUMP_PAGE']);
 
         /* 验证数据 */

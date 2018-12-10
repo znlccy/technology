@@ -199,7 +199,7 @@ class Product extends BasisController {
         $purpose = request()->param('purpose');
         $amount = request()->param('amount');
         $proposal = request()->file('proposal');
-        $picture = request()->file('picture');
+        /*$picture = request()->file('picture');*/
         $recommend = request()->param('recommend',1);
         $status = request()->param('status',0);
 
@@ -218,7 +218,7 @@ class Product extends BasisController {
         }
 
         /* 移动图片 */
-        if ($picture) {
+        /*if ($picture) {
             $config = [
                 'ext'       => 'png,jpg,jpeg,bmp'
             ];
@@ -229,7 +229,7 @@ class Product extends BasisController {
             } else {
                 return $this->return_message(Code::INVALID, '上传图片格式不正确,只允许jpg、jpeg、png、bmp格式');
             }
-        }
+        }*/
 
         /* 验证数据 */
         $validate_data = [
@@ -242,7 +242,6 @@ class Product extends BasisController {
             'purpose'   => $purpose,
             'amount'    => $amount,
             'proposal'  => $proposal,
-            'picture'   => $picture,
             'recommend' => $recommend,
             'status'    => $status
         ];
@@ -264,9 +263,9 @@ class Product extends BasisController {
             if (empty($proposal)) {
                 unset($validate_data['proposal']);
             }
-            if (empty($picture)) {
+            /*if (empty($picture)) {
                 unset($validate_data['picture']);
-            }
+            }*/
             if ($validate_data['status'] !== 0) {
                 $validate_data['status'] = 0;
             }

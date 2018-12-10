@@ -744,17 +744,13 @@ class User extends BasicController {
     public function create_crowdfunding() {
 
         /* 接收参数 */
-        $uid = session('user.id');
-
-        if (is_null($uid) || empty($uid)) {
-            return $this->return_message(Code::INVALID, '用户还没有登录');
-        }
         $title = request()->param('title');
+        $user_id = \session('user.id');
+        $current_amount = request()->param('current_amount');
         $target_amount = request()->param('target_amount');
         $expired_time = request()->param('expired_time');
         $rich_text = request()->param('rich_text');
-
-        $products = request()->param('product/a');
+        $products = request()->param('goods/a');
         $pictures = request()->file('picture');
 
         $picture_path = [];
@@ -778,6 +774,9 @@ class User extends BasicController {
         /* 验证数据 */
         $validate_data = [
             'title'         => $title,
+            'status'        => 0,
+            'user_id'       => $user_id,
+            'current_amount'=> $current_amount,
             'target_amount' => $target_amount,
             'expired_time'  => $expired_time,
             'rich_text'     => $rich_text,
@@ -794,13 +793,112 @@ class User extends BasicController {
         $crowdfund_instance = $this->crowd_funding_model->where('id',$crowd_id)->find();
 
         foreach ($products as $key => $product) {
-            $product_result = $crowdfund_instance->Product()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
+            $product_result = $crowdfund_instance->Goods()->save(['price' => $product['price'], 'introduce' => $product['introduce'], 'picture' => $picture_path[$key], 'title' => $product['title']]);
         }
 
         if ($product_result) {
             return json(['code' => Code::SUCCESS, 'message' => '操作数据成功']);
         } else {
             return json(['code' => Code::SUCCESS, 'message' => '操作数据失败']);
+        }
+    }
+
+    /* 创建众筹列表 */
+    public function crowd_listing() {
+        $user_id = session('user.id');
+
+        if (is_null($user_id) || empty($user_id)) {
+            return $this->return_message(Code::FAILURE, '用户还没登录');
+        }
+
+        $user = $this->user_model->where('id', $user_id)->find();
+
+        if (empty($user)) {
+            return $this->return_message(Code::FAILURE, '不存在该用户');
+        }
+
+        /* 接收参数 */
+        $page_size = request()->param('page_size', $this->user_page['PAGE_SIZE']);
+        $jump_page = request()->param('jump_page', $this->user_page['JUMP_PAGE']);
+
+        /* 验证参数 */
+        $validate_data = [
+            'page_size'     => $page_size,
+            'jump_page'     => $jump_page
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('crowd_listing')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        $product = $this->crowd_funding_model
+            ->where('user_id', '=', $user_id)
+            ->where('status', '=', '1')
+            ->paginate($page_size, false, ['page' => $jump_page]);
+
+        if ($product) {
+            return $this->return_message(Code::SUCCESS, '获取用户合作的成果列表成功',$product);
+        } else {
+            return $this->return_message(Code::FAILURE, '获取用户合作的成果列表失败');
+        }
+    }
+
+    /* 创建众筹详情 */
+    public function crowd_detail() {
+        /* 接收参数 */
+        $id = request()->param('id');
+
+        /* 验证参数 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('detail')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $crowdfunding = $this->crowd_funding_model
+            ->where('id', $id)
+            ->find();
+
+        if ($crowdfunding) {
+            return $this->return_message(Code::SUCCESS,  '获取众筹成功', $crowdfunding);
+        } else {
+            return $this->return_message(Code::FAILURE,  '获取众筹失败');
+        }
+    }
+
+    /* 创建众筹删除 */
+    public function crowd_delete() {
+        /* 接收参数 */
+        $id = request()->param('id');
+
+        /* 验证数据 */
+        $validate_data = [
+            'id'        => $id
+        ];
+
+        /* 验证结果 */
+        $result = $this->user_validate->scene('delete')->check($validate_data);
+
+        if (true !== $result) {
+            return $this->return_message(Code::INVALID, $this->user_validate->getError());
+        }
+
+        /* 返回结果 */
+        $crowdfunding = $this->crowd_funding_model->where('id', '=', $id)->delete();
+
+        if ($crowdfunding) {
+            return $this->return_message(Code::SUCCESS, '删除众筹成功');
+        } else {
+            return $this->return_message(Code::FAILURE, '删除众筹失败');
         }
     }
 

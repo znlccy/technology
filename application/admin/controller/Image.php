@@ -19,17 +19,20 @@ class Image extends BasisController {
         $picture = request()->file('picture');
 
         if ($picture) {
-            $info = $picture->move(ROOT_PATH . 'public' . DS . 'images');
+            $config = [
+                'ext'   => 'png,jpg,gif,bmp'
+            ];
+            $info = $picture->validate($config)->move(ROOT_PATH . 'public' . DS . 'images');
             if ($info) {
                 $sub_path     = str_replace('\\', '/', $info->getSaveName());
                 $picture = '/images/' . $sub_path;
             }else{
-                return $this->return_message(Code::FAILURE, '图片上传错误');
+                return $this->return_message(Code::FAILURE, '图片上传格式错误');
             }
         }else{
-            return $this->return_message(Code::FAILURE, '图片上传错误');
+            return $this->return_message(Code::FAILURE, '图片上传为空');
         }
 
-        return $this->return_message(Code::SUCCESS, '图片上传成功');
+        return $this->return_message(Code::SUCCESS, '图片上传成功', $picture);
     }
 }
